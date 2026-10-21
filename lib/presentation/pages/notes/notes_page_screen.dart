@@ -7,7 +7,7 @@ import 'package:gestor_tareas_personales/presentation/constants/text_constants.d
 import 'package:gestor_tareas_personales/presentation/pages/notes/notes_page_view_model.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/widgets/notes_grid_widget.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/widgets/notes_search_bar_widget.dart';
-import 'package:gestor_tareas_personales/presentation/widgets/loader_screen_widget.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/loaders_status/loader_screen_widget.dart';
 
 class NotesPageScreen extends ConsumerWidget {
   final NotesPageViewModel vm;
@@ -41,11 +41,22 @@ class NotesPageScreen extends ConsumerWidget {
                 status: vm.notes,
                 onRetry: vm.handleRetry,
                 noResultsScreen: true,
-                customNoResultsOperation: vm.notes.data?.isEmpty ?? false,
                 messageNoResults: i18n(
                   vm.query.isEmpty
                       ? TextConstants.notesEmpty
                       : TextConstants.notesNoResults,
+                ),
+                iconNoResultsIcon: vm.query.isEmpty
+                    ? Icons.lightbulb_outline
+                    : Icons.search_off,
+                // Sin notas no hay nada que reintentar: se ofrece crear una
+                onRetryNoResults: vm.query.isEmpty
+                    ? vm.handleCreateNote
+                    : vm.handleClearSearch,
+                buttonTextNoResults: i18n(
+                  vm.query.isEmpty
+                      ? TextConstants.notesCreate
+                      : TextConstants.notesClearSearch,
                 ),
                 builder: (context, _) => _buildNotes(context, i18n),
               ),

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:gestor_tareas_personales/presentation/widgets/button_widget.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gestor_tareas_personales/dependency_injection.dart';
+import 'package:gestor_tareas_personales/presentation/constants/text_constants.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/buttons/button_widget.dart';
 
-class NoResultsSmallWidget extends StatelessWidget {
+class NoResultsSmallWidget extends ConsumerWidget {
   final Function()? onRetry;
   final String? message;
   final String? retryText;
@@ -18,7 +21,9 @@ class NoResultsSmallWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(localizationStateProvider);
+    final i18n = ref.read(localizationStateProvider.notifier).translate;
     return ClipRect(
       child: OverflowBox(
         minHeight: 0,
@@ -33,7 +38,7 @@ class NoResultsSmallWidget extends StatelessWidget {
               ?icon,
               const SizedBox(height: 6),
               Text(
-                title ?? 'Sin resultados',
+                title ?? i18n(TextConstants.noResultsWidgetTitle),
                 style: Theme.of(context).textTheme.bodySmall
                     ?.copyWith(color: Colors.grey, fontWeight: FontWeight.w600),
                 textAlign: TextAlign.center,
@@ -56,7 +61,7 @@ class NoResultsSmallWidget extends StatelessWidget {
                 ButtonWidget(
                   fitContent: true,
                   onTap: onRetry!,
-                  text: retryText ?? 'Reintentar',
+                  text: retryText ?? i18n(TextConstants.noResultsWidgetButton),
                 ),
               ],
             ],

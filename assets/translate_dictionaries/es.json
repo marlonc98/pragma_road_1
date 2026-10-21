@@ -1,4 +1,9 @@
 {
+  "retry": "Reintentar",
+  "errorLoadingWidgetAnErrorOccurred": "Ocurrió un error",
+  "noResultsWidgetTitle": "Sin resultados",
+  "noResultsWidgetDescription": "No encontramos información para mostrar",
+  "noResultsWidgetButton": "Reintentar",
   "splashPageTitle": "Gestor de Tareas",
   "versionAndBuild": "Versión {version} ({build})",
   "notesSearchHint": "Buscar en tus notas",
@@ -11,6 +16,7 @@
   "noteOptionDelete": "Eliminar",
   "noteDeleted": "Nota eliminada",
   "notesCreate": "Nueva nota",
+  "notesClearSearch": "Limpiar búsqueda",
   "noteEditorHint": "Título",
   "noteEditorSaving": "Guardando…",
   "noteEditorSaved": "Guardado",

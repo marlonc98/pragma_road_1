@@ -1,11 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:gestor_tareas_personales/domain/entities/petition_status_entity.dart';
+import 'package:gestor_tareas_personales/domain/entities/search_result_entity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gestor_tareas_personales/dependency_injection.dart';
-import 'package:gestor_tareas_personales/domain/entities/petition_status_entity.dart';
-import 'package:gestor_tareas_personales/presentation/widgets/error_loading_widget.dart';
-import 'package:gestor_tareas_personales/presentation/widgets/loading_widget.dart';
-import 'package:gestor_tareas_personales/presentation/widgets/no_results_small_widget.dart';
-import 'package:gestor_tareas_personales/presentation/widgets/no_results_widget.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/loaders_status/error_loading_widget.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/loaders_status/loading_widget.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/loaders_status/no_results_small_widget.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/loaders_status/no_results_widget.dart';
+
+Widget? getIconNoResults({
+  required BuildContext context,
+  IconData? iconNoResultsIcon,
+}) {
+  if (iconNoResultsIcon == null) return null;
+  return Icon(
+    iconNoResultsIcon,
+    size: 50,
+    color: Theme.of(context).colorScheme.outline,
+  );
+}
 
 enum FullSizeOptions { inExpanded, inContainer, notFullSize }
 
@@ -27,7 +40,6 @@ class LoaderScreenWidget<T> extends ConsumerWidget {
   final String? messageNoResults;
   final String? buttonTextNoResults;
   final Function()? onRetryNoResults;
-  final String? iconNoResults;
   final IconData? iconNoResultsIcon;
   final Widget? customNoResults;
 
@@ -46,7 +58,6 @@ class LoaderScreenWidget<T> extends ConsumerWidget {
     this.messageNoResults,
     this.buttonTextNoResults,
     this.onRetryNoResults,
-    this.iconNoResults,
     this.buttonRetry,
     this.fullSize = FullSizeOptions.inContainer,
     this.iconNoResultsIcon,
@@ -101,6 +112,7 @@ class LoaderScreenWidget<T> extends ConsumerWidget {
     final T? data = status.data;
     final dataIsNull =
         data == null ||
+        (data is SearchResultEntity ? data.isEmpty : false) ||
         (data is List ? data.isEmpty : false) ||
         (data is Map ? data.isEmpty : false);
 
@@ -116,11 +128,19 @@ class LoaderScreenWidget<T> extends ConsumerWidget {
                     onRetry: onRetryNoResults ?? onRetry,
                     message: messageNoResults,
                     retryText: buttonTextNoResults,
+                    icon: getIconNoResults(
+                      context: context,
+                      iconNoResultsIcon: iconNoResultsIcon,
+                    ),
                   )
                 : NoResultsWidget(
                     onRetry: onRetryNoResults ?? onRetry,
                     message: messageNoResults,
                     retryText: buttonTextNoResults,
+                    icon: getIconNoResults(
+                      context: context,
+                      iconNoResultsIcon: iconNoResultsIcon,
+                    ),
                   )),
         context,
         dataIsNull,

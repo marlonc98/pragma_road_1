@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:gestor_tareas_personales/presentation/widgets/button_widget.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gestor_tareas_personales/dependency_injection.dart';
+import 'package:gestor_tareas_personales/presentation/constants/text_constants.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/buttons/button_widget.dart';
 
-class NoResultsWidget extends StatelessWidget {
+class NoResultsWidget extends ConsumerWidget {
   final Function()? onRetry;
   final String? message;
   final String? retryText;
@@ -19,7 +22,9 @@ class NoResultsWidget extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(localizationStateProvider);
+    final i18n = ref.read(localizationStateProvider.notifier).translate;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -27,6 +32,7 @@ class NoResultsWidget extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            if (icon != null) ...[icon!, const SizedBox(height: 20)],
             if (title != null && title!.isNotEmpty) ...[
               Text(
                 title!,
@@ -40,7 +46,7 @@ class NoResultsWidget extends StatelessWidget {
               child: Text(
                 (message != null && message!.isNotEmpty)
                     ? message!
-                    : 'No se encontraron resultados',
+                    : i18n(TextConstants.noResultsWidgetDescription),
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyMedium
                     ?.copyWith(color: Colors.grey[600]),
@@ -54,7 +60,7 @@ class NoResultsWidget extends StatelessWidget {
                   fitContent: true,
                   type: buttonType,
                   onTap: onRetry!,
-                  text: retryText ?? 'Reintentar',
+                  text: retryText ?? i18n(TextConstants.noResultsWidgetButton),
                 ),
               ),
           ],

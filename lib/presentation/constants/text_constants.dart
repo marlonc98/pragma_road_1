@@ -1,4 +1,13 @@
 class TextConstants {
+  static const retry = "retry";
+
+  static const errorLoadingWidgetAnErrorOccurred =
+      "errorLoadingWidgetAnErrorOccurred";
+
+  static const noResultsWidgetTitle = "noResultsWidgetTitle";
+  static const noResultsWidgetDescription = "noResultsWidgetDescription";
+  static const noResultsWidgetButton = "noResultsWidgetButton";
+
   static const splashPageTitle = "splashPageTitle";
   static const versionAndBuild = "versionAndBuild"; //version,build
 
@@ -12,6 +21,7 @@ class TextConstants {
   static const noteOptionDelete = "noteOptionDelete";
   static const noteDeleted = "noteDeleted";
   static const notesCreate = "notesCreate";
+  static const notesClearSearch = "notesClearSearch";
 
   static const noteEditorHint = "noteEditorHint";
   static const noteEditorSaving = "noteEditorSaving";
