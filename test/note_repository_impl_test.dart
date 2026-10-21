@@ -31,10 +31,14 @@ void main() {
     await repository.addNote(note('1', title: 'Mercado', day: 1));
     await repository.addNote(note('2', title: 'Gimnasio', day: 2));
 
-    final all = await repository.getNotes();
+    final all = await repository.getNotes(page: 1, itemsPerPage: 20);
     expect(all.data!.data.map((note) => note.id), ['2', '1']);
 
-    final filtered = await repository.getNotes(query: 'merc');
+    final filtered = await repository.getNotes(
+      page: 1,
+      itemsPerPage: 20,
+      query: 'merc',
+    );
     expect(filtered.data!.data.map((note) => note.id), ['1']);
   });
 
@@ -42,7 +46,10 @@ void main() {
     final content = List.generate(12, (i) => 'renglón $i').join('\n');
     await repository.addNote(note('1', content: content));
 
-    final listed = (await repository.getNotes()).data!.data.single;
+    final listed = (await repository.getNotes(
+      page: 1,
+      itemsPerPage: 20,
+    )).data!.data.single;
     expect(listed.content!.split('\n'), hasLength(10));
     expect(listed.content, endsWith('renglón 9...'));
 
@@ -77,5 +84,31 @@ void main() {
     final prefs = await SharedPreferences.getInstance();
     expect(prefs.getKeys(), isNot(contains('sp_note_1')));
     expect(prefs.getStringList('sp_pinned_notes'), isEmpty);
+  });
+
+  test('las fijadas salen solo en getPinnedNotes', () async {
+    await repository.addNote(note('1', title: 'Fijada', day: 1));
+    await repository.addNote(note('2', title: 'Normal', day: 2));
+    await repository.setPinned('1', true);
+
+    final pinned = await repository.getPinnedNotes();
+    expect(pinned.data!.map((note) => note.id), ['1']);
+    expect(pinned.data!.single.pinned, isTrue);
+
+    final others = await repository.getNotes(page: 1, itemsPerPage: 20);
+    expect(others.data!.data.map((note) => note.id), ['2']);
+  });
+
+  test('pagina las notas no fijadas', () async {
+    for (var day = 1; day <= 5; day++) {
+      await repository.addNote(note('$day', title: 'Nota $day', day: day));
+    }
+    final first = await repository.getNotes(page: 1, itemsPerPage: 2);
+    expect(first.data!.data.map((note) => note.id), ['5', '4']);
+    expect(first.data!.totalItems, 5);
+    expect(first.data!.lastpage, 3);
+
+    final last = await repository.getNotes(page: 3, itemsPerPage: 2);
+    expect(last.data!.data.map((note) => note.id), ['1']);
   });
 }

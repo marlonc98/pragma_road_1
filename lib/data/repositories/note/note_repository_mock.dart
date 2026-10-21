@@ -62,7 +62,42 @@ final List<NoteEntity> _fakeNotes = [
     createdAt: _daysAgo(3),
     updatedAt: _daysAgo(7),
   ),
+  ..._generatedNotes(60),
 ];
+
+const _generatedTitles = [
+  'Pendientes del trabajo',
+  'Receta',
+  'Ideas',
+  'Compras',
+  'Viaje',
+  'Reunión',
+];
+
+const _generatedContents = [
+  'Revisar correos y responder lo urgente',
+  'Comprar pan\nLeche\nHuevos',
+  'Leer un capítulo antes de dormir',
+  'Agendar cita con el médico para la próxima semana y llevar los exámenes',
+  'Paso 1\nPaso 2\nPaso 3\nPaso 4\nPaso 5',
+];
+
+List<NoteEntity> _generatedNotes(int count) => List.generate(count, (index) {
+  final number = index + 1;
+  final hasTitle = index % 3 != 2;
+  final hasContent = index % 4 != 3;
+  return NoteEntity(
+    id: 'generated_$number',
+    title: hasTitle
+        ? '${_generatedTitles[index % _generatedTitles.length]} $number'
+        : null,
+    content: hasContent || !hasTitle
+        ? _generatedContents[index % _generatedContents.length]
+        : null,
+    createdAt: _daysAgo(10 + number),
+    updatedAt: _daysAgo(10 + number),
+  );
+});
 
 class NoteRepositoryMock extends NoteRepository {
   final Duration _delay = const Duration(milliseconds: 400);
@@ -91,30 +126,45 @@ class NoteRepositoryMock extends NoteRepository {
   }
 
   @override
-  Future<PetitionStatusEntity<SearchResultEntity<NoteEntity>>> getNotes({
+  Future<PetitionStatusEntity<List<NoteEntity>>> getPinnedNotes({
     String? query,
   }) async {
     await Future.delayed(_delay);
-    final search = query?.toLowerCase() ?? '';
-    final notes =
-        _fakeNotes
-            .where(
-              (note) =>
-                  search.isEmpty ||
-                  (note.title?.toLowerCase().contains(search) ?? false) ||
-                  (note.content?.toLowerCase().contains(search) ?? false),
-            )
-            .toList()
-          ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    return PetitionStatusEntity.success(
+      data: _search(query).where((note) => note.pinned).toList(),
+    );
+  }
+
+  @override
+  Future<PetitionStatusEntity<SearchResultEntity<NoteEntity>>> getNotes({
+    required int page,
+    required int itemsPerPage,
+    String? query,
+  }) async {
+    await Future.delayed(_delay);
+    final notes = _search(query).where((note) => !note.pinned).toList();
     return PetitionStatusEntity.success(
       data: SearchResultEntity(
-        currentPage: 1,
+        currentPage: page,
         totalItems: notes.length,
-        data: notes,
-        itemsPerPage: notes.length,
-        lastpage: 1,
+        data: notes.skip((page - 1) * itemsPerPage).take(itemsPerPage).toList(),
+        itemsPerPage: itemsPerPage,
+        lastpage: (notes.length / itemsPerPage).ceil(),
       ),
     );
+  }
+
+  List<NoteEntity> _search(String? query) {
+    final search = query?.toLowerCase() ?? '';
+    return _fakeNotes
+        .where(
+          (note) =>
+              search.isEmpty ||
+              (note.title?.toLowerCase().contains(search) ?? false) ||
+              (note.content?.toLowerCase().contains(search) ?? false),
+        )
+        .toList()
+      ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
   }
 
   @override

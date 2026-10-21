@@ -9,8 +9,14 @@ class GetNotesUseCase {
   GetNotesUseCase({required this.noteRepository});
 
   Future<PetitionStatusEntity<SearchResultEntity<NoteEntity>>> getNotes({
+    required int page,
+    required int itemsPerPage,
     String? query,
-  }) => noteRepository.getNotes(query: query?.trim());
+  }) => noteRepository.getNotes(
+    page: page,
+    itemsPerPage: itemsPerPage,
+    query: query?.trim(),
+  );
 
   Future<PetitionStatusEntity<NoteEntity>> getNoteById(String id) =>
       noteRepository.getNoteById(id);

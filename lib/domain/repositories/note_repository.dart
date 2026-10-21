@@ -7,7 +7,13 @@ abstract class NoteRepository {
   Future<PetitionStatusEntity<void>> updateNote(NoteEntity note);
   Future<PetitionStatusEntity<void>> deleteNote(String id);
 
+  Future<PetitionStatusEntity<List<NoteEntity>>> getPinnedNotes({
+    String? query,
+  });
+
   Future<PetitionStatusEntity<SearchResultEntity<NoteEntity>>> getNotes({
+    required int page,
+    required int itemsPerPage,
     String? query,
   });
 

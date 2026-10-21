@@ -7,6 +7,7 @@ import 'package:gestor_tareas_personales/domain/repositories/note_repository.dar
 import 'package:gestor_tareas_personales/domain/use_cases/load_use_case.dart';
 import 'package:gestor_tareas_personales/domain/use_cases/note/delete_note_use_case.dart';
 import 'package:gestor_tareas_personales/domain/use_cases/note/get_notes_use_case.dart';
+import 'package:gestor_tareas_personales/domain/use_cases/note/get_pinned_notes_use_case.dart';
 import 'package:gestor_tareas_personales/domain/use_cases/note/pin_note_use_case.dart';
 import 'package:gestor_tareas_personales/domain/use_cases/note/save_note_use_case.dart';
 import 'package:gestor_tareas_personales/flavors/flavors.dart';
@@ -40,6 +41,10 @@ final loadUseCaseProvider = Provider<LoadUseCase>(
 //#region ------------- note -------------------------//
 final getNotesUseCaseProvider = Provider<GetNotesUseCase>(
   (ref) => GetNotesUseCase(noteRepository: ref.read(noteRepositoryProvider)),
+);
+final getPinnedNotesUseCaseProvider = Provider<GetPinnedNotesUseCase>(
+  (ref) =>
+      GetPinnedNotesUseCase(noteRepository: ref.read(noteRepositoryProvider)),
 );
 final saveNoteUseCaseProvider = Provider<SaveNoteUseCase>(
   (ref) => SaveNoteUseCase(noteRepository: ref.read(noteRepositoryProvider)),

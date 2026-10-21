@@ -8,9 +8,11 @@ void main() {
     final repository = NoteRepositoryMock();
     final useCase = PinNoteUseCase(noteRepository: repository);
 
-    final notes = (await repository.getNotes()).data!.data;
-    final unpinned = notes.where((note) => !note.pinned).toList();
-    final pinnedBefore = notes.where((note) => note.pinned).length;
+    final unpinned = (await repository.getNotes(
+      page: 1,
+      itemsPerPage: 100,
+    )).data!.data;
+    final pinnedBefore = (await repository.countPinnedNotes()).data!;
 
     for (var i = 0; i < PinNoteUseCase.maxPinnedNotes - pinnedBefore; i++) {
       expect((await useCase.togglePin(unpinned[i])).isSuccess, isTrue);

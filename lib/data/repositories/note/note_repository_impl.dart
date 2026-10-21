@@ -2,6 +2,7 @@ import 'package:gestor_tareas_personales/data/repositories/note/api/count_pinned
 import 'package:gestor_tareas_personales/data/repositories/note/api/delete_note_api_impl.dart';
 import 'package:gestor_tareas_personales/data/repositories/note/api/get_note_by_id_api_impl.dart';
 import 'package:gestor_tareas_personales/data/repositories/note/api/get_notes_api_impl.dart';
+import 'package:gestor_tareas_personales/data/repositories/note/api/get_pinned_notes_api_impl.dart';
 import 'package:gestor_tareas_personales/data/repositories/note/api/save_note_api_impl.dart';
 import 'package:gestor_tareas_personales/data/repositories/note/api/set_pinned_api_impl.dart';
 import 'package:gestor_tareas_personales/domain/constants/errors_constants.dart';
@@ -30,21 +31,37 @@ class NoteRepositoryImpl extends NoteRepository {
       _run(() => deleteNoteApiImpl(notePrefix, pinnedNotesKey, id));
 
   @override
-  Future<PetitionStatusEntity<SearchResultEntity<NoteEntity>>> getNotes({
+  Future<PetitionStatusEntity<List<NoteEntity>>> getPinnedNotes({
     String? query,
-  }) => _run(() async {
-    final notes = await getNotesApiImpl(
+  }) => _run(
+    () => getPinnedNotesApiImpl(
       notePrefix,
       pinnedNotesKey,
       previewMaxLines: previewMaxLines,
       query: query,
+    ),
+  );
+
+  @override
+  Future<PetitionStatusEntity<SearchResultEntity<NoteEntity>>> getNotes({
+    required int page,
+    required int itemsPerPage,
+    String? query,
+  }) => _run(() async {
+    final result = await getNotesApiImpl(
+      notePrefix,
+      pinnedNotesKey,
+      previewMaxLines: previewMaxLines,
+      page: page,
+      itemsPerPage: itemsPerPage,
+      query: query,
     );
     return SearchResultEntity(
-      currentPage: 1,
-      totalItems: notes.length,
-      data: notes,
-      itemsPerPage: notes.length,
-      lastpage: 1,
+      currentPage: page,
+      totalItems: result.total,
+      data: result.notes,
+      itemsPerPage: itemsPerPage,
+      lastpage: (result.total / itemsPerPage).ceil(),
     );
   });
 

@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:gestor_tareas_personales/dependency_injection.dart';
 import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
-import 'package:gestor_tareas_personales/domain/entities/search_result_entity.dart';
 import 'package:gestor_tareas_personales/presentation/constants/text_constants.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/notes_page_view_model.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/widgets/notes_grid_widget.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/widgets/notes_search_bar_widget.dart';
-import 'package:gestor_tareas_personales/presentation/widgets/loaders_status/loader_screen_widget.dart';
+import 'package:gestor_tareas_personales/presentation/pages/notes/widgets/note_preview_widget.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/loaders_status/error_loading_widget.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/loaders_status/loading_widget.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/loaders_status/no_results_widget.dart';
 
 class NotesPageScreen extends ConsumerWidget {
   final NotesPageViewModel vm;
@@ -37,27 +40,13 @@ class NotesPageScreen extends ConsumerWidget {
               ),
             ),
             Expanded(
-              child: LoaderScreenWidget<SearchResultEntity<NoteEntity>>(
-                status: vm.notes,
-                onRetry: vm.handleRetry,
-                noResultsScreen: true,
-                messageNoResults: i18n(
-                  vm.query.isEmpty
-                      ? TextConstants.notesEmpty
-                      : TextConstants.notesNoResults,
+              child: RefreshIndicator(
+                onRefresh: vm.handleLoadNotes,
+                child: PagingListener<int, NoteEntity>(
+                  controller: vm.pagingController,
+                  builder: (context, state, fetchNextPage) =>
+                      _buildNotes(context, i18n, state, fetchNextPage),
                 ),
-                iconNoResultsIcon: vm.query.isEmpty
-                    ? Icons.lightbulb_outline
-                    : Icons.search_off,
-                onRetryNoResults: vm.query.isEmpty
-                    ? vm.handleCreateNote
-                    : vm.handleClearSearch,
-                buttonTextNoResults: i18n(
-                  vm.query.isEmpty
-                      ? TextConstants.notesCreate
-                      : TextConstants.notesClearSearch,
-                ),
-                builder: (context, _) => _buildNotes(context, i18n),
               ),
             ),
           ],
@@ -69,30 +58,94 @@ class NotesPageScreen extends ConsumerWidget {
   Widget _buildNotes(
     BuildContext context,
     String Function(String, {Map<String, dynamic>? values}) i18n,
+    PagingState<int, NoteEntity> state,
+    VoidCallback fetchNextPage,
   ) {
-    final pinned = vm.pinnedNotes;
-    final others = vm.otherNotes;
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
-      children: [
-        if (pinned.isNotEmpty) ...[
-          _buildSectionTitle(context, i18n(TextConstants.notesPinned)),
-          NotesGridWidget(
-            notes: pinned,
-            onTap: vm.handleOpenNote,
-            onLongPress: vm.handleNoteOptions,
+    final pinned = vm.pinnedNotes.data ?? [];
+    final hasOthers = state.items?.isNotEmpty ?? false;
+    return CustomScrollView(
+      slivers: [
+        if (vm.pinnedNotes.isError)
+          SliverToBoxAdapter(
+            child: ErrorLoadingWidget(
+              onRetry: vm.handleRetry,
+              error: i18n(vm.pinnedNotes.error ?? ''),
+            ),
           ),
-        ],
-        if (others.isNotEmpty) ...[
-          if (pinned.isNotEmpty)
-            _buildSectionTitle(context, i18n(TextConstants.notesOthers)),
-          NotesGridWidget(
-            notes: others,
-            onTap: vm.handleOpenNote,
-            onLongPress: vm.handleNoteOptions,
+        if (pinned.isNotEmpty)
+          SliverPadding(
+            padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle(context, i18n(TextConstants.notesPinned)),
+                  NotesGridWidget(
+                    notes: pinned,
+                    onTap: vm.handleOpenNote,
+                    onLongPress: vm.handleNoteOptions,
+                  ),
+                  if (hasOthers)
+                    _buildSectionTitle(
+                      context,
+                      i18n(TextConstants.notesOthers),
+                    ),
+                ],
+              ),
+            ),
           ),
-        ],
+        SliverPadding(
+          padding: EdgeInsets.fromLTRB(12, pinned.isEmpty ? 8 : 0, 12, 96),
+          sliver: PagedSliverMasonryGrid<int, NoteEntity>.count(
+            state: state,
+            fetchNextPage: fetchNextPage,
+            crossAxisCount: 2,
+            mainAxisSpacing: 8,
+            crossAxisSpacing: 8,
+            builderDelegate: PagedChildBuilderDelegate<NoteEntity>(
+              itemBuilder: (context, note, index) => NotePreviewWidget(
+                note: note,
+                onTap: () => vm.handleOpenNote(note),
+                onLongPress: () => vm.handleNoteOptions(note),
+              ),
+              firstPageProgressIndicatorBuilder: (context) =>
+                  const LoadingWidget(),
+              firstPageErrorIndicatorBuilder: (context) => ErrorLoadingWidget(
+                onRetry: vm.handleRetry,
+                error: state.error?.toString(),
+              ),
+              noItemsFoundIndicatorBuilder: (context) =>
+                  pinned.isNotEmpty || vm.pinnedNotes.isLoading
+                  ? const SizedBox.shrink()
+                  : _buildEmpty(i18n),
+            ),
+          ),
+        ),
       ],
+    );
+  }
+
+  Widget _buildEmpty(
+    String Function(String, {Map<String, dynamic>? values}) i18n,
+  ) {
+    final isSearching = vm.query.isNotEmpty;
+    return NoResultsWidget(
+      message: i18n(
+        isSearching ? TextConstants.notesNoResults : TextConstants.notesEmpty,
+      ),
+      icon: Builder(
+        builder: (context) => Icon(
+          isSearching ? Icons.search_off : Icons.lightbulb_outline,
+          size: 50,
+          color: Theme.of(context).colorScheme.outline,
+        ),
+      ),
+      onRetry: isSearching ? vm.handleClearSearch : vm.handleCreateNote,
+      retryText: i18n(
+        isSearching
+            ? TextConstants.notesClearSearch
+            : TextConstants.notesCreate,
+      ),
     );
   }
 

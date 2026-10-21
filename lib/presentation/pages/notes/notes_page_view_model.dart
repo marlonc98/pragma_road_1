@@ -2,10 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:gestor_tareas_personales/dependency_injection.dart';
+import 'package:gestor_tareas_personales/domain/constants/errors_constants.dart';
 import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
 import 'package:gestor_tareas_personales/domain/entities/petition_status_entity.dart';
-import 'package:gestor_tareas_personales/domain/entities/search_result_entity.dart';
 import 'package:gestor_tareas_personales/presentation/constants/text_constants.dart';
 import 'package:gestor_tareas_personales/presentation/pages/note_editor/note_editor_page.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/notes_page.dart';
@@ -19,36 +20,59 @@ class NotesPageViewModel extends ViewModel<NotesPage> {
     required super.ref,
     required super.isMounted,
   }) {
-    handleLoadNotes();
+    _loadPinnedNotes();
   }
+
+  static const int _itemsPerPage = 20;
 
   final TextEditingController searchController = TextEditingController();
   Timer? _searchDebounce;
-  int _searchRequest = 0;
+  int _pinnedRequest = 0;
 
-  PetitionStatusEntity<SearchResultEntity<NoteEntity>> notes =
-      PetitionStatusEntity<SearchResultEntity<NoteEntity>>.loading();
+  late final PagingController<int, NoteEntity> pagingController =
+      PagingController(getNextPageKey: _getNextPageKey, fetchPage: _fetchPage);
+
+  PetitionStatusEntity<List<NoteEntity>> pinnedNotes =
+      PetitionStatusEntity<List<NoteEntity>>.loading();
 
   String get query => searchController.text.trim();
-  List<NoteEntity> get pinnedNotes =>
-      notes.data?.data.where((note) => note.pinned).toList() ?? [];
-  List<NoteEntity> get otherNotes =>
-      notes.data?.data.where((note) => !note.pinned).toList() ?? [];
 
   Future<void> handleLoadNotes() async {
-    final request = ++_searchRequest;
-    final response = await ref
-        .read(getNotesUseCaseProvider)
-        .getNotes(query: query);
-    if (request != _searchRequest || !mounted) return;
-    notes = response;
-    notifyListeners();
+    pagingController.refresh();
+    await _loadPinnedNotes();
   }
 
   void handleRetry() {
-    notes = PetitionStatusEntity<SearchResultEntity<NoteEntity>>.loading();
+    pinnedNotes = PetitionStatusEntity<List<NoteEntity>>.loading();
     notifyListeners();
     handleLoadNotes();
+  }
+
+  Future<void> _loadPinnedNotes() async {
+    final request = ++_pinnedRequest;
+    final response = await ref
+        .read(getPinnedNotesUseCaseProvider)
+        .getPinnedNotes(query: query);
+    if (request != _pinnedRequest || !mounted) return;
+    pinnedNotes = response;
+    notifyListeners();
+  }
+
+  int? _getNextPageKey(PagingState<int, NoteEntity> state) {
+    final lastPageLength = state.pages?.lastOrNull?.length;
+    if (lastPageLength != null && lastPageLength < _itemsPerPage) return null;
+    return state.nextIntPageKey;
+  }
+
+  Future<List<NoteEntity>> _fetchPage(int page) async {
+    final response = await ref
+        .read(getNotesUseCaseProvider)
+        .getNotes(page: page, itemsPerPage: _itemsPerPage, query: query);
+    if (!response.isSuccess) {
+      final i18n = ref.read(localizationStateProvider.notifier).translate;
+      throw i18n(response.error ?? ErrorsConstants.unknownError);
+    }
+    return response.data?.data ?? [];
   }
 
   void handleSearchChanged(String _) {
@@ -102,6 +126,7 @@ class NotesPageViewModel extends ViewModel<NotesPage> {
   @override
   void dispose() {
     _searchDebounce?.cancel();
+    pagingController.dispose();
     searchController.dispose();
     super.dispose();
   }

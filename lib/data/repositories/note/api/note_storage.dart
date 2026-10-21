@@ -19,3 +19,16 @@ NoteEntity noteFromJson(Map<String, dynamic> json, {required bool pinned}) =>
       createdAt: DateTime.parse(json['createdAt'] as String),
       updatedAt: DateTime.parse(json['updatedAt'] as String),
     );
+
+bool noteMatches(NoteEntity note, String? query) {
+  final search = query?.toLowerCase() ?? '';
+  return search.isEmpty ||
+      (note.title?.toLowerCase().contains(search) ?? false) ||
+      (note.content?.toLowerCase().contains(search) ?? false);
+}
+
+NoteEntity notePreview(NoteEntity note, int maxLines) {
+  final lines = note.content?.split('\n');
+  if (lines == null || lines.length <= maxLines) return note;
+  return note.copyWith(content: '${lines.take(maxLines).join('\n')}...');
+}
