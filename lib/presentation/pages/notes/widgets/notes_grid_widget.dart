@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/widgets/note_preview_widget.dart';
 
-/// Grilla de dos columnas con alturas libres, al estilo Keep
 class NotesGridWidget extends StatelessWidget {
   final List<NoteEntity> notes;
   final ValueChanged<NoteEntity> onTap;

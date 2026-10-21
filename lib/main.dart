@@ -6,7 +6,6 @@ import 'flavors/flavors.dart';
 import 'presentation/app.dart';
 
 void main() async {
-  // appFlavor llega con --flavor; si no tiene, usa prod
   F.appFlavor = Flavor.values.firstWhere(
     (element) => element.name == appFlavor,
     orElse: () => Flavor.prod,

@@ -1,13 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gestor_tareas_personales/presentation/constants/markdown_constants.dart';
 
-/// Pinta el primer renglón con el estilo del título y aplica el formato
-/// Markdown (negrita, cursiva, tachado y listas).
-/// Las marcas siguen en el texto (si no, el cursor se descuadra), pero se
-/// dibujan invisibles y sin ancho, como en Google Keep. Para que no estorben,
-/// el cursor y el borrado se las saltan.
-/// Respeta el rango que el teclado está componiendo (autocompletado);
-/// si se ignora, teclados como Gboard se traban al escribir.
 class NoteEditingController extends TextEditingController {
   TextStyle? titleStyle;
   TextStyle markerStyle = const TextStyle(color: Colors.grey);
@@ -20,7 +13,6 @@ class NoteEditingController extends TextEditingController {
     letterSpacing: 0,
   );
 
-  /// Pares vacíos, del más largo al más corto
   static const _emptyPairMarkers = [
     MarkdownConstants.bold,
     MarkdownConstants.strikethrough,
@@ -42,7 +34,6 @@ class NoteEditingController extends TextEditingController {
 
     var lineStart = 0;
     for (final line in text.split('\n')) {
-      // El primer renglón es el título, no puede ser lista
       if (lineStart > 0 && line.startsWith(MarkdownConstants.listPrefix)) {
         ranges.add(
           _StyledRange(
@@ -79,8 +70,6 @@ class NoteEditingController extends TextEditingController {
     return TextSpan(style: style, children: _buildSegments(ranges));
   }
 
-  /// Corta el texto donde empieza o termina algún estilo y combina
-  /// los estilos que cubren cada tramo
   List<TextSpan> _buildSegments(List<_StyledRange> ranges) {
     final boundaries = <int>{
       0,
@@ -106,7 +95,6 @@ class NoteEditingController extends TextEditingController {
     return segments;
   }
 
-  /// Como TextStyle.merge, pero suma las decoraciones (tachado + subrayado)
   TextStyle _merge(TextStyle? base, TextStyle other) {
     if (base == null) return other;
     final decorations = [?base.decoration, ?other.decoration];
@@ -133,11 +121,6 @@ class NoteEditingController extends TextEditingController {
         _skipMarkersOnDelete(oldValue, newValue);
   }
 
-  /// Enter:
-  /// - El formato se reconoce por renglón, así que un Enter dentro de una
-  ///   negrita la partiría y dejaría las marcas a la vista. Se cierra el
-  ///   formato antes del salto y se reabre después: **ho|la** → **ho**\n**la**
-  /// - En un item de lista se continúa la lista; en un item vacío se termina
   TextEditingValue? _handleLineBreak(
     TextEditingValue oldValue,
     TextEditingValue newValue,
@@ -152,7 +135,6 @@ class NoteEditingController extends TextEditingController {
     if (!insertedLineBreak) return null;
 
     final formats = _parseFormats(oldText);
-    // En el borde de un formato el salto va por fuera de las marcas
     var moved = true;
     while (moved) {
       moved = false;
@@ -192,7 +174,6 @@ class NoteEditingController extends TextEditingController {
       lineStart,
       lineEnd == -1 ? oldText.length : lineEnd,
     );
-    // El primer renglón es el título, no puede ser lista
     final isListItem = lineStart > 0 && line.startsWith(listPrefix);
     if (isListItem && line == listPrefix) {
       return TextEditingValue(
@@ -228,8 +209,6 @@ class NoteEditingController extends TextEditingController {
     final markers = _markerRanges(newValue.text);
 
     var offset = _snapOutOfMarker(to, direction, markers);
-    // Con las flechas, si el paso solo cruzó marcas invisibles el cursor
-    // no se movería en pantalla: avanza un carácter más
     if (oldValue.selection.isCollapsed && (to - from).abs() == 1) {
       while (offset != from &&
           _isHidden(from, offset, markers) &&
@@ -259,12 +238,11 @@ class NoteEditingController extends TextEditingController {
     final isForwardDelete = oldValue.selection.baseOffset == caret;
     if (!isBackspace && !isForwardDelete) return newValue;
 
-    // Borrar justo después de tocar un botón de formato lo cancela
     final emptyPair = _emptyPairAround(oldText, oldValue.selection.baseOffset);
     if (emptyPair != null) return emptyPair;
 
     final markers = _markerRanges(oldText);
-    var index = caret; // posición del carácter borrado en el texto anterior
+    var index = caret;
     if (!markers.any((marker) => _contains(marker, index))) {
       return _emptyPairAround(newValue.text, caret) ?? newValue;
     }
@@ -285,8 +263,6 @@ class NoteEditingController extends TextEditingController {
         skipped;
   }
 
-  /// Si el cursor quedó entre un par de marcas sin texto (****, ~~~~, **),
-  /// devuelve el texto sin ese par
   TextEditingValue? _emptyPairAround(String text, int caret) {
     for (final marker in _emptyPairMarkers) {
       final length = marker.length;
@@ -320,7 +296,6 @@ class NoteEditingController extends TextEditingController {
     return snapped;
   }
 
-  /// Si todos los caracteres entre [a] y [b] son marcas invisibles
   bool _isHidden(int a, int b, List<TextRange> markers) {
     final start = a < b ? a : b;
     final end = a < b ? b : a;
@@ -335,8 +310,6 @@ class NoteEditingController extends TextEditingController {
   //#endregion Cursor y borrado
 
   //#region ------------- Formato con la barra -------------------------//
-  /// Pone [type] en la selección o, si ya lo tiene, se lo quita solo a ella
-  /// (en medio de una negrita: **hola |dssd| hosad** → **hola **dssd** hosad**)
   void toggleFormat(MarkdownFormat type) {
     final selection = this.selection;
     if (!selection.isValid) return;
@@ -368,7 +341,6 @@ class NoteEditingController extends TextEditingController {
     int selectionEnd,
     List<_InlineFormat> formats,
   ) {
-    // Las marcas van pegadas al texto, no a los espacios de los bordes
     var start = selectionStart;
     var end = selectionEnd;
     while (start < end && _isSpace(text[start])) {
@@ -381,7 +353,6 @@ class NoteEditingController extends TextEditingController {
       start = selectionStart;
       end = selectionEnd;
     }
-    // Si dentro había pedazos con el mismo formato se unen en uno solo
     final inner = [
       for (final format in formats)
         if (format.type == type &&
@@ -416,13 +387,10 @@ class NoteEditingController extends TextEditingController {
   ) {
     final opening = text.substring(format.start, format.innerStart);
     final closing = text.substring(format.innerEnd, format.end);
-    // Entre el borde y la selección solo hay marcas invisibles: cuenta como
-    // si la selección llegara al borde
     final atStart = _isHidden(format.innerStart, start, markers);
     final atEnd = _isHidden(end, format.innerEnd, markers);
 
     if (start == end) {
-      // Sin selección: lo que se escriba en el cursor sale sin el formato
       if (atStart) {
         return value.copyWith(
           selection: TextSelection.collapsed(offset: format.start),
@@ -439,8 +407,6 @@ class NoteEditingController extends TextEditingController {
       );
     }
 
-    // Las marcas nuevas van pegadas a las palabras que siguen con formato:
-    // **hola |dssd| hosad** → **hola** dssd **hosad**
     var openingAt = end;
     while (openingAt < format.innerEnd && _isSpace(text[openingAt])) {
       openingAt++;
@@ -479,11 +445,6 @@ class NoteEditingController extends TextEditingController {
     ],
   ];
 
-  /// Parser con pila, como los de Markdown: recorre cada renglón y empareja
-  /// cada marca de cierre con la apertura más cercana del mismo tipo, así
-  /// soporta formatos anidados y combinados en cualquier orden.
-  /// Cada formato usa un carácter distinto (** negrita, _ cursiva, ~~ tachado)
-  /// para que sus marcas nunca se confundan aunque queden pegadas
   List<_InlineFormat> _parseFormats(String text) {
     final formats = <_InlineFormat>[];
     var lineStart = 0;
@@ -521,7 +482,6 @@ class NoteEditingController extends TextEditingController {
         opener.remaining -= used;
         remaining -= used;
         closeStart += used;
-        // Las aperturas que quedaron dentro sin cerrar ya no se pueden usar
         unmatched.addAll(openers.sublist(index + 1));
         openers.removeRange(index + 1, openers.length);
         if (opener.remaining < used) {
@@ -533,7 +493,6 @@ class NoteEditingController extends TextEditingController {
       }
     }
 
-    // Un par sin texto (****, __, ~~~~), recién puesto con la barra, se oculta
     for (final delimiter in [...unmatched, ...openers]) {
       final pairLength = _formatsByChar[delimiter.char]!.marker.length * 2;
       final isWholeRun = delimiter.remaining == delimiter.runLength;
@@ -551,7 +510,6 @@ class NoteEditingController extends TextEditingController {
     for (final format in MarkdownFormat.values) format.marker[0]: format,
   };
 
-  /// Secuencias seguidas del mismo carácter de marca
   List<({String char, int start, int length})> _delimiterRuns(String line) {
     final runs = <({String char, int start, int length})>[];
     var index = 0;
@@ -598,8 +556,6 @@ enum MarkdownFormat {
   const MarkdownFormat(this.marker, this.style);
 }
 
-/// Un formato encontrado en el texto: marcas en [start, innerStart) y
-/// [innerEnd, end), contenido en medio. [type] es null en un par vacío
 class _InlineFormat {
   final int start;
   final int innerStart;
@@ -616,7 +572,6 @@ class _InlineFormat {
   );
 }
 
-/// Una apertura pendiente: [remaining] marcas sin usar desde [start]
 class _Delimiter {
   final String char;
   final int start;

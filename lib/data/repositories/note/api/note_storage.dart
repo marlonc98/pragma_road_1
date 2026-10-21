@@ -1,9 +1,7 @@
 import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
 
-/// Clave directa de una nota: {prefijo}_{id}
 String noteKey(String notePrefix, String id) => '${notePrefix}_$id';
 
-/// pinned no se guarda en la nota: sale de la lista de ids fijados
 Map<String, dynamic> noteToJson(NoteEntity note) => {
   'id': note.id,
   'title': note.title,

@@ -18,7 +18,6 @@ class NoteEntity {
   bool get hasTitle => title?.trim().isNotEmpty ?? false;
   bool get hasContent => content?.trim().isNotEmpty ?? false;
 
-  /// Una nota necesita al menos título o contenido
   bool get isEmpty => !hasTitle && !hasContent;
 
   NoteEntity copyWith({

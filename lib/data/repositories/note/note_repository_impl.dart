@@ -11,10 +11,8 @@ import 'package:gestor_tareas_personales/domain/entities/search_result_entity.da
 import 'package:gestor_tareas_personales/domain/repositories/note_repository.dart';
 
 class NoteRepositoryImpl extends NoteRepository {
-  /// Cada nota se guarda en {notePrefix}_{id}
   static const String notePrefix = 'sp_note';
 
-  /// Solo los ids de las notas fijadas
   static const String pinnedNotesKey = 'sp_pinned_notes';
 
   static const int previewMaxLines = 10;

@@ -4,8 +4,6 @@ import 'package:gestor_tareas_personales/data/repositories/note/api/note_storage
 import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Notas para listar, de la más reciente a la más vieja.
-/// El contenido se recorta a [previewMaxLines] renglones con ...
 Future<List<NoteEntity>> getNotesApiImpl(
   String notePrefix,
   String pinnedNotesKey, {

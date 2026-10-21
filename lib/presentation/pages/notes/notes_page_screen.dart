@@ -49,7 +49,6 @@ class NotesPageScreen extends ConsumerWidget {
                 iconNoResultsIcon: vm.query.isEmpty
                     ? Icons.lightbulb_outline
                     : Icons.search_off,
-                // Sin notas no hay nada que reintentar: se ofrece crear una
                 onRetryNoResults: vm.query.isEmpty
                     ? vm.handleCreateNote
                     : vm.handleClearSearch,

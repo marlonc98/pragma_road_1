@@ -30,13 +30,10 @@ class NoteEditorPageViewModel extends ViewModel<NoteEditorPage> {
   String _savedText = '';
   SaveStatus saveStatus = SaveStatus.idle;
 
-  /// La nota de la lista puede venir recortada; se edita la completa
   late bool isLoading = widget.note != null;
 
-  /// Debounce: cada tecla reinicia el timer, solo se guarda cuando se deja de escribir
   Timer? _autosaveDebounce;
 
-  /// Los guardados se encadenan para que un update no se adelante al add
   Future<void> _saveQueue = Future.value();
 
   bool get isNewNote => widget.note == null;
@@ -63,7 +60,6 @@ class NoteEditorPageViewModel extends ViewModel<NoteEditorPage> {
   bool get _hasUnsavedChanges => controller.text != _savedText;
 
   void _onTextChanged() {
-    // El listener también salta al mover el cursor, solo interesa el texto
     if (!_hasUnsavedChanges) return;
     _autosaveDebounce?.cancel();
     _autosaveDebounce = Timer(autosaveDelay, _enqueueSave);
@@ -78,7 +74,6 @@ class NoteEditorPageViewModel extends ViewModel<NoteEditorPage> {
     final text = controller.text;
     if (text == _savedText) return;
     final parsed = _parseText(text);
-    // Sin título ni contenido no se guarda nada
     if (parsed.title == null && parsed.content == null) return;
 
     final now = DateTime.now();
@@ -112,10 +107,8 @@ class NoteEditorPageViewModel extends ViewModel<NoteEditorPage> {
     notifyListeners();
   }
 
-  /// Guarda lo pendiente antes de salir; si la nota quedó vacía se descarta
   Future<void> handleExit() async {
     _autosaveDebounce?.cancel();
-    // Sin cargar todavía no hay nada que guardar ni descartar
     if (isLoading) {
       context.pop();
       return;
@@ -140,7 +133,6 @@ class NoteEditorPageViewModel extends ViewModel<NoteEditorPage> {
   void handleStrikethrough() =>
       controller.toggleFormat(MarkdownFormat.strikethrough);
 
-  /// Agrega o quita la viñeta del renglón donde está el cursor
   void handleList() {
     final text = controller.text;
     final selection = controller.selection;
@@ -162,7 +154,6 @@ class NoteEditorPageViewModel extends ViewModel<NoteEditorPage> {
     );
   }
 
-  /// El primer renglón es el título y el resto es el contenido
   ({String? title, String? content}) _parseText(String text) {
     final breakIndex = text.indexOf('\n');
     final title = breakIndex == -1 ? text : text.substring(0, breakIndex);

@@ -36,7 +36,6 @@ class NotesPageViewModel extends ViewModel<NotesPage> {
       notes.data?.data.where((note) => !note.pinned).toList() ?? [];
 
   Future<void> handleLoadNotes() async {
-    // Evita que una búsqueda vieja pise el resultado de una más reciente
     final request = ++_searchRequest;
     final response = await ref
         .read(getNotesUseCaseProvider)
@@ -74,7 +73,6 @@ class NotesPageViewModel extends ViewModel<NotesPage> {
   }
 
   Future<void> handleNoteOptions(NoteEntity note) async {
-    // Sin esto el buscador recupera el foco al cerrar el menú
     FocusManager.instance.primaryFocus?.unfocus();
     final option = await showNoteOptionsBottomSheet(context, note: note);
     if (option == null || !mounted) return;

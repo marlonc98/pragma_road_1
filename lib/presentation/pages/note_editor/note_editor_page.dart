@@ -7,7 +7,6 @@ import 'package:gestor_tareas_personales/presentation/utils/stf_view_model_adapt
 class NoteEditorPage extends StatefulWidget {
   static const String route = '/notes/editor';
 
-  /// Null cuando se está creando una nota nueva
   final NoteEntity? note;
   const NoteEditorPage({super.key, this.note});
 
