@@ -21,7 +21,14 @@ class NoteRepositoryImpl extends NoteRepository {
   }
 
   @override
-  Future<PetitionStatusEntity<SearchResultEntity<NoteEntity>>> getNotes() {
+  Future<PetitionStatusEntity<SearchResultEntity<NoteEntity>>> getNotes({
+    String? query,
+  }) {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<PetitionStatusEntity<int>> countPinnedNotes() {
     throw UnimplementedError();
   }
 }

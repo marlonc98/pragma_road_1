@@ -1,0 +1,146 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:gestor_tareas_personales/dependency_injection.dart';
+import 'package:gestor_tareas_personales/domain/entities/petition_status_entity.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/error_loading_widget.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/loading_widget.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/no_results_small_widget.dart';
+import 'package:gestor_tareas_personales/presentation/widgets/no_results_widget.dart';
+
+enum FullSizeOptions { inExpanded, inContainer, notFullSize }
+
+class LoaderScreenWidget<T> extends ConsumerWidget {
+  final PetitionStatusEntity<T> status;
+  final bool noResultsScreen;
+  final bool noResultsSmall;
+  final FullSizeOptions fullSize;
+  final bool allowNull;
+  final bool padBottom;
+  final bool customNoResultsOperation;
+
+  final String? errorTitle;
+  final String? retryMessage;
+  final Function()? onRetry;
+  final Widget? icon;
+  final String? buttonRetry;
+
+  final String? messageNoResults;
+  final String? buttonTextNoResults;
+  final Function()? onRetryNoResults;
+  final String? iconNoResults;
+  final IconData? iconNoResultsIcon;
+  final Widget? customNoResults;
+
+  final Widget Function(BuildContext context, T data) builder;
+
+  const LoaderScreenWidget({
+    super.key,
+    this.errorTitle,
+    this.noResultsScreen = false,
+    this.noResultsSmall = false,
+    this.icon,
+    required this.status,
+    required this.builder,
+    this.onRetry,
+    this.retryMessage,
+    this.messageNoResults,
+    this.buttonTextNoResults,
+    this.onRetryNoResults,
+    this.iconNoResults,
+    this.buttonRetry,
+    this.fullSize = FullSizeOptions.inContainer,
+    this.iconNoResultsIcon,
+    this.allowNull = false,
+    this.padBottom = true,
+    this.customNoResults,
+    this.customNoResultsOperation = false,
+  });
+
+  Widget _containerFullSize(Widget child, BuildContext context, bool isNull) {
+    if ((status.isSuccess) && !isNull || allowNull) {
+      return child;
+    }
+    if (fullSize == FullSizeOptions.inExpanded) {
+      return SizedBox(
+        height: MediaQuery.of(context).size.height - 150 - kToolbarHeight - 100,
+        child: Center(
+          child: Padding(
+            padding: EdgeInsetsGeometry.only(bottom: padBottom ? 150 : 0),
+            child: child,
+          ),
+        ),
+      );
+    } else if (fullSize == FullSizeOptions.notFullSize) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsetsGeometry.only(bottom: padBottom ? 150 : 0),
+          child: child,
+        ),
+      );
+    }
+    if (fullSize == FullSizeOptions.inContainer) {
+      return SizedBox.expand(
+        child: Center(
+          child: Padding(
+            padding: EdgeInsetsGeometry.only(bottom: 150),
+            child: child,
+          ),
+        ),
+      );
+    }
+    return Padding(
+      padding: EdgeInsetsGeometry.only(bottom: padBottom ? 150 : 0),
+      child: child,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    ref.watch(localizationStateProvider);
+    final i18n = ref.read(localizationStateProvider.notifier).translate;
+    final T? data = status.data;
+    final dataIsNull =
+        data == null ||
+        (data is List ? data.isEmpty : false) ||
+        (data is Map ? data.isEmpty : false);
+
+    if (status.isNotStarted) return SizedBox.shrink();
+    if (status.isLoading) {
+      return _containerFullSize(const LoadingWidget(), context, dataIsNull);
+    } else if (noResultsScreen &&
+        (status.isSuccess && (dataIsNull || customNoResultsOperation))) {
+      return _containerFullSize(
+        customNoResults ??
+            (noResultsSmall
+                ? NoResultsSmallWidget(
+                    onRetry: onRetryNoResults ?? onRetry,
+                    message: messageNoResults,
+                    retryText: buttonTextNoResults,
+                  )
+                : NoResultsWidget(
+                    onRetry: onRetryNoResults ?? onRetry,
+                    message: messageNoResults,
+                    retryText: buttonTextNoResults,
+                  )),
+        context,
+        dataIsNull,
+      );
+    } else if (status.isError ||
+        (!allowNull && (dataIsNull || customNoResultsOperation))) {
+      return _containerFullSize(
+        ErrorLoadingWidget(
+          onRetry: onRetry,
+          error: status.error != null ? i18n(status.error!) : errorTitle,
+        ),
+        context,
+        dataIsNull,
+      );
+    }
+    assert(
+      data != null || allowNull,
+      'LoaderScreenWidget: builder reached with null data; use a nullable T '
+      '(e.g. LoaderScreenWidget<Cat?>) when allowNull is true.',
+    );
+    return builder(context, data as T);
+  }
+}

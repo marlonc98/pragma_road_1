@@ -6,6 +6,9 @@ class ErrorsConstants {
 
   static const String noUserFound = "noUserFound";
 
+  static const String emptyNote = "emptyNote";
+  static const String maxPinnedNotes = "maxPinnedNotes";
+
   static bool existsKey(String key) {
     return [
       unauthorized,
@@ -13,6 +16,8 @@ class ErrorsConstants {
       noInternet,
       timeout,
       noUserFound,
+      emptyNote,
+      maxPinnedNotes,
     ].contains(key);
   }
 }

@@ -1,0 +1,23 @@
+import 'package:gestor_tareas_personales/domain/constants/errors_constants.dart';
+import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
+import 'package:gestor_tareas_personales/domain/entities/petition_status_entity.dart';
+import 'package:gestor_tareas_personales/domain/repositories/note_repository.dart';
+
+class PinNoteUseCase {
+  static const int maxPinnedNotes = 5;
+
+  final NoteRepository noteRepository;
+
+  PinNoteUseCase({required this.noteRepository});
+
+  Future<PetitionStatusEntity<void>> togglePin(NoteEntity note) async {
+    if (!note.pinned) {
+      final pinnedCount = await noteRepository.countPinnedNotes();
+      if (!pinnedCount.isSuccess) return pinnedCount;
+      if ((pinnedCount.data ?? 0) >= maxPinnedNotes) {
+        return PetitionStatusEntity.fromError(ErrorsConstants.maxPinnedNotes);
+      }
+    }
+    return noteRepository.updateNote(note.copyWith(pinned: !note.pinned));
+  }
+}

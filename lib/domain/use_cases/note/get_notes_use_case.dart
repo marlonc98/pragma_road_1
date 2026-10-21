@@ -8,6 +8,7 @@ class GetNotesUseCase {
 
   GetNotesUseCase({required this.noteRepository});
 
-  Future<PetitionStatusEntity<SearchResultEntity<NoteEntity>>> getNotes() =>
-      noteRepository.getNotes();
+  Future<PetitionStatusEntity<SearchResultEntity<NoteEntity>>> getNotes({
+    String? query,
+  }) => noteRepository.getNotes(query: query?.trim());
 }

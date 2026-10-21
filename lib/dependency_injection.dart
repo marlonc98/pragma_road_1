@@ -1,11 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gestor_tareas_personales/data/repositories/localization/localization_repository_impl.dart';
-import 'package:gestor_tareas_personales/data/repositories/note/note_repository_impl.dart';
+import 'package:gestor_tareas_personales/data/repositories/note/note_repository_mock.dart';
 import 'package:gestor_tareas_personales/domain/repositories/localization_repository.dart';
 import 'package:gestor_tareas_personales/domain/repositories/note_repository.dart';
 import 'package:gestor_tareas_personales/domain/use_cases/load_use_case.dart';
 import 'package:gestor_tareas_personales/domain/use_cases/note/delete_note_use_case.dart';
 import 'package:gestor_tareas_personales/domain/use_cases/note/get_notes_use_case.dart';
+import 'package:gestor_tareas_personales/domain/use_cases/note/pin_note_use_case.dart';
 import 'package:gestor_tareas_personales/domain/use_cases/note/save_note_use_case.dart';
 import 'package:gestor_tareas_personales/presentation/states/localization_state_impl.dart';
 
@@ -14,7 +15,7 @@ final localizationRepositoryProvider = Provider<LocalizationRepository>(
   (ref) => LocalizationRepositoryImpl(),
 );
 final noteRepositoryProvider = Provider<NoteRepository>(
-  (ref) => NoteRepositoryImpl(),
+  (ref) => NoteRepositoryMock(),
 );
 //#endregion repositories
 
@@ -40,6 +41,9 @@ final saveNoteUseCaseProvider = Provider<SaveNoteUseCase>(
 );
 final deleteNoteUseCaseProvider = Provider<DeleteNoteUseCase>(
   (ref) => DeleteNoteUseCase(noteRepository: ref.read(noteRepositoryProvider)),
+);
+final pinNoteUseCaseProvider = Provider<PinNoteUseCase>(
+  (ref) => PinNoteUseCase(noteRepository: ref.read(noteRepositoryProvider)),
 );
 //#endregion ---------- note -------------------------//
 //#endregion ---------- use cases -------------------------//
