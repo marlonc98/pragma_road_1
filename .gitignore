@@ -46,3 +46,25 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Archivos locales / generados por la máquina (no se versionan)
+.metadata
+pubspec.lock
+**/Podfile.lock
+**/Pods/
+**/xcuserdata/
+**/local.properties
+.vscode/settings.json
+
+# Credenciales y secretos
+.env
+.env.*
+!.env.example
+**/key.properties
+*.jks
+*.keystore
+*.p12
+*.p8
+*.mobileprovision
+**/google-services.json
+**/GoogleService-Info.plist
