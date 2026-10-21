@@ -18,6 +18,6 @@ class PinNoteUseCase {
         return PetitionStatusEntity.fromError(ErrorsConstants.maxPinnedNotes);
       }
     }
-    return noteRepository.updateNote(note.copyWith(pinned: !note.pinned));
+    return noteRepository.setPinned(note.id, !note.pinned);
   }
 }

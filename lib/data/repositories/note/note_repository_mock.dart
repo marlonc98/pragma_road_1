@@ -1,3 +1,4 @@
+import 'package:gestor_tareas_personales/domain/constants/errors_constants.dart';
 import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
 import 'package:gestor_tareas_personales/domain/entities/petition_status_entity.dart';
 import 'package:gestor_tareas_personales/domain/entities/search_result_entity.dart';
@@ -114,6 +115,27 @@ class NoteRepositoryMock extends NoteRepository {
         lastpage: 1,
       ),
     );
+  }
+
+  @override
+  Future<PetitionStatusEntity<NoteEntity>> getNoteById(String id) async {
+    await Future.delayed(_delay);
+    final index = _fakeNotes.indexWhere((element) => element.id == id);
+    if (index == -1) {
+      return PetitionStatusEntity.fromError(ErrorsConstants.noteNotFound);
+    }
+    return PetitionStatusEntity.success(data: _fakeNotes[index]);
+  }
+
+  @override
+  Future<PetitionStatusEntity<void>> setPinned(String id, bool pinned) async {
+    await Future.delayed(_delay);
+    final index = _fakeNotes.indexWhere((element) => element.id == id);
+    if (index == -1) {
+      return PetitionStatusEntity.fromError(ErrorsConstants.noteNotFound);
+    }
+    _fakeNotes[index] = _fakeNotes[index].copyWith(pinned: pinned);
+    return PetitionStatusEntity.success();
   }
 
   @override

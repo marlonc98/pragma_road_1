@@ -21,16 +21,17 @@ class NoteEditorPageViewModel extends ViewModel<NoteEditorPage> {
     required super.ref,
     required super.isMounted,
   }) {
-    _note = widget.note;
-    _savedText = _noteToText(_note);
-    controller = NoteEditingController(text: _savedText)
-      ..addListener(_onTextChanged);
+    controller = NoteEditingController()..addListener(_onTextChanged);
+    if (widget.note != null) _loadNote(widget.note!.id);
   }
 
   late final NoteEditingController controller;
   NoteEntity? _note;
   String _savedText = '';
   SaveStatus saveStatus = SaveStatus.idle;
+
+  /// La nota de la lista puede venir recortada; se edita la completa
+  late bool isLoading = widget.note != null;
 
   /// Debounce: cada tecla reinicia el timer, solo se guarda cuando se deja de escribir
   Timer? _autosaveDebounce;
@@ -39,6 +40,26 @@ class NoteEditorPageViewModel extends ViewModel<NoteEditorPage> {
   Future<void> _saveQueue = Future.value();
 
   bool get isNewNote => widget.note == null;
+
+  Future<void> _loadNote(String id) async {
+    final response = await ref.read(getNotesUseCaseProvider).getNoteById(id);
+    if (!mounted) return;
+    if (!response.isSuccess) {
+      final i18n = ref.read(localizationStateProvider.notifier).translate;
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(i18n(response.error ?? ''))));
+      // ignore: use_build_context_synchronously
+      context.pop();
+      return;
+    }
+    _note = response.data;
+    _savedText = _noteToText(_note);
+    controller.text = _savedText;
+    isLoading = false;
+    notifyListeners();
+  }
+
   bool get _hasUnsavedChanges => controller.text != _savedText;
 
   void _onTextChanged() {
@@ -94,6 +115,11 @@ class NoteEditorPageViewModel extends ViewModel<NoteEditorPage> {
   /// Guarda lo pendiente antes de salir; si la nota quedó vacía se descarta
   Future<void> handleExit() async {
     _autosaveDebounce?.cancel();
+    // Sin cargar todavía no hay nada que guardar ni descartar
+    if (isLoading) {
+      context.pop();
+      return;
+    }
     if (_hasUnsavedChanges) await _enqueueSave();
     await _saveQueue;
     final parsed = _parseText(controller.text);

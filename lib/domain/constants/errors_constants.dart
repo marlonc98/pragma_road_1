@@ -8,6 +8,7 @@ class ErrorsConstants {
 
   static const String emptyNote = "emptyNote";
   static const String maxPinnedNotes = "maxPinnedNotes";
+  static const String noteNotFound = "noteNotFound";
 
   static bool existsKey(String key) {
     return [
@@ -18,6 +19,7 @@ class ErrorsConstants {
       noUserFound,
       emptyNote,
       maxPinnedNotes,
+      noteNotFound,
     ].contains(key);
   }
 }

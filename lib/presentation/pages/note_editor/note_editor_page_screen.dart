@@ -44,11 +44,13 @@ class NoteEditorPageScreen extends ConsumerWidget {
         body: SafeArea(
           child: Column(
             children: [
+              if (vm.isLoading) const LinearProgressIndicator(),
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
                   child: TextField(
                     controller: vm.controller,
+                    readOnly: vm.isLoading,
                     autofocus: vm.isNewNote,
                     expands: true,
                     maxLines: null,

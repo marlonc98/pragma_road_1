@@ -18,5 +18,6 @@
   "noInternet": "Sin conexión a internet",
   "timeout": "La solicitud tardó demasiado",
   "emptyNote": "La nota necesita un título o un contenido",
-  "maxPinnedNotes": "Solo puedes fijar hasta 5 notas"
+  "maxPinnedNotes": "Solo puedes fijar hasta 5 notas",
+  "noteNotFound": "No se encontró la nota"
 }
