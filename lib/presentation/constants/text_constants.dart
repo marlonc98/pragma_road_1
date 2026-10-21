@@ -11,4 +11,9 @@ class TextConstants {
   static const noteOptionUnpin = "noteOptionUnpin";
   static const noteOptionDelete = "noteOptionDelete";
   static const noteDeleted = "noteDeleted";
+  static const notesCreate = "notesCreate";
+
+  static const noteEditorHint = "noteEditorHint";
+  static const noteEditorSaving = "noteEditorSaving";
+  static const noteEditorSaved = "noteEditorSaved";
 }

@@ -7,9 +7,9 @@ import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
 import 'package:gestor_tareas_personales/domain/entities/petition_status_entity.dart';
 import 'package:gestor_tareas_personales/domain/entities/search_result_entity.dart';
 import 'package:gestor_tareas_personales/presentation/constants/text_constants.dart';
+import 'package:gestor_tareas_personales/presentation/pages/note_editor/note_editor_page.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/notes_page.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/widgets/note_options_bottom_sheet.dart';
-import 'package:gestor_tareas_personales/presentation/pages/placeholder/placeholder_page.dart';
 import 'package:gestor_tareas_personales/presentation/utils/view_model.dart';
 
 class NotesPageViewModel extends ViewModel<NotesPage> {
@@ -63,9 +63,14 @@ class NotesPageViewModel extends ViewModel<NotesPage> {
     handleSearchChanged('');
   }
 
-  void handleOpenNote(NoteEntity note) {
-    // TODO: abrir el editor de la nota
-    context.push(PlaceholderPage.route);
+  Future<void> handleCreateNote() => _openEditor(null);
+
+  Future<void> handleOpenNote(NoteEntity note) => _openEditor(note);
+
+  Future<void> _openEditor(NoteEntity? note) async {
+    FocusManager.instance.primaryFocus?.unfocus();
+    await context.push(NoteEditorPage.route, extra: note);
+    if (mounted) await handleLoadNotes();
   }
 
   Future<void> handleNoteOptions(NoteEntity note) async {

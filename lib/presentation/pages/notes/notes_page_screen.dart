@@ -18,6 +18,11 @@ class NotesPageScreen extends ConsumerWidget {
     ref.watch(localizationStateProvider);
     final i18n = ref.read(localizationStateProvider.notifier).translate;
     return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        tooltip: i18n(TextConstants.notesCreate),
+        onPressed: vm.handleCreateNote,
+        child: const Icon(Icons.add),
+      ),
       body: SafeArea(
         bottom: false,
         child: Column(
@@ -58,7 +63,7 @@ class NotesPageScreen extends ConsumerWidget {
     final pinned = vm.pinnedNotes;
     final others = vm.otherNotes;
     return ListView(
-      padding: const EdgeInsets.fromLTRB(12, 8, 12, 32),
+      padding: const EdgeInsets.fromLTRB(12, 8, 12, 96),
       children: [
         if (pinned.isNotEmpty) ...[
           _buildSectionTitle(context, i18n(TextConstants.notesPinned)),
