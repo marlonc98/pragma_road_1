@@ -133,64 +133,12 @@ class NoteEditorPageViewModel extends ViewModel<NoteEditorPage> {
     }
   }
 
-  void handleBold() => _toggleInline(MarkdownConstants.bold);
+  void handleBold() => controller.toggleFormat(MarkdownFormat.bold);
 
-  void handleItalic() => _toggleInline(MarkdownConstants.italic);
+  void handleItalic() => controller.toggleFormat(MarkdownFormat.italic);
 
-  void handleStrikethrough() => _toggleInline(MarkdownConstants.strikethrough);
-
-  /// Envuelve la selección con [marker], o la desenvuelve si ya lo está
-  void _toggleInline(String marker) {
-    final text = controller.text;
-    final selection = controller.selection;
-    if (!selection.isValid) return;
-    final start = selection.start;
-    final end = selection.end;
-    final length = marker.length;
-
-    final isWrapped =
-        start >= length &&
-        end + length <= text.length &&
-        text.substring(start - length, start) == marker &&
-        text.substring(end, end + length) == marker &&
-        _hasAsteriskFormat(text, start, marker);
-    if (isWrapped) {
-      controller.value = TextEditingValue(
-        text: text
-            .replaceRange(end, end + length, '')
-            .replaceRange(start - length, start, ''),
-        selection: TextSelection(
-          baseOffset: start - length,
-          extentOffset: end - length,
-        ),
-      );
-      return;
-    }
-
-    final selected = text.substring(start, end);
-    controller.value = TextEditingValue(
-      text: text.replaceRange(start, end, '$marker$selected$marker'),
-      selection: TextSelection(
-        baseOffset: start + length,
-        extentOffset: end + length,
-      ),
-    );
-  }
-
-  /// Negrita y cursiva comparten el asterisco: ** es negrita, * cursiva y
-  /// *** ambas. Cuenta los asteriscos antes de la selección para no tomar
-  /// la negrita como cursiva
-  bool _hasAsteriskFormat(String text, int start, String marker) {
-    if (!marker.startsWith(MarkdownConstants.italic)) return true;
-    var asterisks = 0;
-    while (start - asterisks > 0 &&
-        text[start - asterisks - 1] == MarkdownConstants.italic) {
-      asterisks++;
-    }
-    return marker == MarkdownConstants.italic
-        ? asterisks.isOdd
-        : asterisks >= MarkdownConstants.bold.length;
-  }
+  void handleStrikethrough() =>
+      controller.toggleFormat(MarkdownFormat.strikethrough);
 
   /// Agrega o quita la viñeta del renglón donde está el cursor
   void handleList() {

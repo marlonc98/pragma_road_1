@@ -59,7 +59,7 @@ void main() {
   testWidgets('aplica el formato y oculta las marcas sin perder texto', (
     tester,
   ) async {
-    const text = 'Título\n- uno **dos** fd*tres* ~~cuatro~~ snake_case';
+    const text = 'Título\n- uno **dos** fd_tres_ ~~cuatro~~';
     final controller = NoteEditingController(text: text)
       ..titleStyle = titleStyle
       ..markerStyle = const TextStyle(color: Colors.grey);
@@ -74,24 +74,20 @@ void main() {
     expect(styleOf('**')?.color, Colors.transparent);
     expect(styleOf('**')?.fontSize, lessThan(1));
     expect(styleOf('dos')?.fontWeight, FontWeight.bold);
-    // La cursiva con * funciona dentro de una palabra
+    // La cursiva funciona dentro de una palabra
     expect(styleOf('tres')?.fontStyle, FontStyle.italic);
     expect(styleOf('cuatro')?.decoration, TextDecoration.lineThrough);
-    expect(
-      children.any((child) => child.text?.contains('snake_case') ?? false),
-      isTrue,
-    );
   });
 
-  testWidgets('*** aplica negrita y cursiva', (tester) async {
-    final controller = NoteEditingController(text: 'T\n***ambos***');
+  testWidgets('**_x_** aplica negrita y cursiva', (tester) async {
+    final controller = NoteEditingController(text: 'T\n**_ambos_**');
     final span = await buildSpan(tester, controller);
     final children = span.children!.cast<TextSpan>();
     final ambos = children.firstWhere((child) => child.text == 'ambos');
     expect(ambos.style?.fontWeight, FontWeight.bold);
     expect(ambos.style?.fontStyle, FontStyle.italic);
     expect(
-      children.where((child) => child.text == '***'),
+      children.where((child) => child.text!.contains(RegExp(r'[*_]'))),
       everyElement(
         isA<TextSpan>().having(
           (child) => child.style?.color,
@@ -244,5 +240,265 @@ void main() {
       final controller = pressEnter('T\n- **ab**', 7);
       expect(controller.text, 'T\n- **a**\n- **b**');
     });
+  });
+
+  group('combinar y quitar formatos con la barra', () {
+    Future<List<TextSpan>> render(
+      WidgetTester tester,
+      NoteEditingController controller,
+    ) async => (await buildSpan(tester, controller)).children!.cast<TextSpan>();
+
+    TextStyle? styleOf(List<TextSpan> spans, String word) =>
+        spans.firstWhere((span) => span.text == word).style;
+
+    TextStyle? styleContaining(List<TextSpan> spans, String word) =>
+        spans.firstWhere((span) => span.text!.contains(word)).style;
+
+    void expectNoVisibleMarkers(List<TextSpan> spans) {
+      for (final span in spans) {
+        if (span.text!.contains(RegExp(r'[*_~]'))) {
+          expect(span.style?.color, Colors.transparent, reason: span.text);
+        }
+      }
+    }
+
+    NoteEditingController select(String text, String word) {
+      final start = text.indexOf(word);
+      return NoteEditingController(text: text)
+        ..selection = TextSelection(
+          baseOffset: start,
+          extentOffset: start + word.length,
+        );
+    }
+
+    testWidgets('el ejemplo **hola _dssd_ hosad _dasd_ **', (tester) async {
+      final controller = NoteEditingController(
+        text: 'T\n**hola _dssd_ hosad _dasd_ **',
+      );
+      final spans = await render(tester, controller);
+      expect(styleOf(spans, 'dssd')?.fontWeight, FontWeight.bold);
+      expect(styleOf(spans, 'dssd')?.fontStyle, FontStyle.italic);
+      expect(styleOf(spans, 'dasd')?.fontStyle, FontStyle.italic);
+      expect(styleContaining(spans, 'hola')?.fontWeight, FontWeight.bold);
+      expectNoVisibleMarkers(spans);
+    });
+
+    const all = MarkdownFormat.values;
+    final orders = [
+      for (final a in all)
+        for (final b in all)
+          for (final c in all)
+            if ({a, b, c}.length == 3) [a, b, c],
+    ];
+
+    for (final order in orders) {
+      testWidgets('poner ${order.map((f) => f.name).join(', ')}', (
+        tester,
+      ) async {
+        final controller = select('T\n- texto', 'texto');
+        order.forEach(controller.toggleFormat);
+        final spans = await render(tester, controller);
+        final style = styleOf(spans, 'texto');
+        expect(style?.fontWeight, FontWeight.bold, reason: controller.text);
+        expect(style?.fontStyle, FontStyle.italic, reason: controller.text);
+        expect(
+          style?.decoration,
+          TextDecoration.lineThrough,
+          reason: controller.text,
+        );
+        expectNoVisibleMarkers(spans);
+
+        // Quitar cada uno deja los otros dos
+        for (final removed in all) {
+          final copy = NoteEditingController()..value = controller.value;
+          copy.toggleFormat(removed);
+          final after = await render(tester, copy);
+          final afterStyle = styleOf(after, 'texto');
+          expect(
+            afterStyle?.fontWeight == FontWeight.bold,
+            removed != MarkdownFormat.bold,
+            reason: 'negrita al quitar ${removed.name}: ${copy.text}',
+          );
+          expect(
+            afterStyle?.fontStyle == FontStyle.italic,
+            removed != MarkdownFormat.italic,
+            reason: 'cursiva al quitar ${removed.name}: ${copy.text}',
+          );
+          expect(
+            afterStyle?.decoration == TextDecoration.lineThrough,
+            removed != MarkdownFormat.strikethrough,
+            reason: 'tachado al quitar ${removed.name}: ${copy.text}',
+          );
+          expectNoVisibleMarkers(after);
+        }
+      });
+    }
+
+    testWidgets('quitar la negrita a una palabra en medio y volver a ponerla', (
+      tester,
+    ) async {
+      final controller = select('T\n**hola dssd hosad**', 'dssd');
+      controller.toggleFormat(MarkdownFormat.bold);
+      var spans = await render(tester, controller);
+      expect(controller.text, 'T\n**hola** dssd **hosad**');
+      expect(
+        styleContaining(spans, 'dssd')?.fontWeight,
+        isNot(FontWeight.bold),
+        reason: controller.text,
+      );
+      expect(styleContaining(spans, 'hola')?.fontWeight, FontWeight.bold);
+      expect(styleContaining(spans, 'hosad')?.fontWeight, FontWeight.bold);
+      expectNoVisibleMarkers(spans);
+
+      controller.toggleFormat(MarkdownFormat.bold);
+      spans = await render(tester, controller);
+      expect(
+        styleContaining(spans, 'dssd')?.fontWeight,
+        FontWeight.bold,
+        reason: controller.text,
+      );
+      expectNoVisibleMarkers(spans);
+    });
+
+    testWidgets('quitar la cursiva dentro de una negrita', (tester) async {
+      final controller = select('T\n**hola _dssd_ hosad**', 'dssd');
+      controller.toggleFormat(MarkdownFormat.italic);
+      final spans = await render(tester, controller);
+      expect(styleContaining(spans, 'dssd')?.fontWeight, FontWeight.bold);
+      expect(
+        styleContaining(spans, 'dssd')?.fontStyle,
+        isNot(FontStyle.italic),
+        reason: controller.text,
+      );
+      expectNoVisibleMarkers(spans);
+    });
+
+    testWidgets('con el cursor dentro de una negrita, lo que se escribe no '
+        'sale en negrita', (tester) async {
+      final controller = NoteEditingController(text: 'T\n**hola**')
+        ..selection = const TextSelection.collapsed(offset: 6); // ho|la
+      controller.toggleFormat(MarkdownFormat.bold);
+      final caret = controller.selection.baseOffset;
+      controller.value = TextEditingValue(
+        text: controller.text.replaceRange(caret, caret, 'x'),
+        selection: TextSelection.collapsed(offset: caret + 1),
+      );
+      final spans = await render(tester, controller);
+      expect(
+        styleOf(spans, 'x')?.fontWeight,
+        isNot(FontWeight.bold),
+        reason: controller.text,
+      );
+      expect(styleOf(spans, 'ho')?.fontWeight, FontWeight.bold);
+      expect(styleOf(spans, 'la')?.fontWeight, FontWeight.bold);
+      expectNoVisibleMarkers(spans);
+    });
+  });
+
+  group('escribir y tocar botones sin selección', () {
+    void type(NoteEditingController controller, String text) {
+      for (final char in text.split('')) {
+        final caret = controller.selection.baseOffset;
+        controller.value = TextEditingValue(
+          text: controller.text.replaceRange(caret, caret, char),
+          selection: TextSelection.collapsed(offset: caret + 1),
+        );
+      }
+    }
+
+    const all = MarkdownFormat.values;
+    final orders = [
+      for (final a in all)
+        for (final b in all)
+          if (a != b) [a, b],
+    ];
+
+    for (final order in orders) {
+      testWidgets('algo, ${order.map((f) => f.name).join(', ')}, texto', (
+        tester,
+      ) async {
+        final controller = NoteEditingController(text: 'T\nalgo')
+          ..selection = const TextSelection.collapsed(offset: 6);
+        order.forEach(controller.toggleFormat);
+        type(controller, 'texto');
+
+        final spans = (await buildSpan(
+          tester,
+          controller,
+        )).children!.cast<TextSpan>();
+        final style = spans
+            .firstWhere((span) => span.text!.contains('texto'))
+            .style;
+        for (final format in all) {
+          final expected = order.contains(format);
+          final actual = switch (format) {
+            MarkdownFormat.bold => style?.fontWeight == FontWeight.bold,
+            MarkdownFormat.italic => style?.fontStyle == FontStyle.italic,
+            MarkdownFormat.strikethrough =>
+              style?.decoration == TextDecoration.lineThrough,
+          };
+          expect(
+            actual,
+            expected,
+            reason: '${format.name}: ${controller.text}',
+          );
+        }
+        for (final span in spans) {
+          if (span.text!.contains(RegExp(r'[*_~]'))) {
+            expect(
+              span.style?.color,
+              Colors.transparent,
+              reason: '${span.text} en ${controller.text}',
+            );
+          }
+        }
+      });
+    }
+  });
+
+  testWidgets('algo, cursiva, texto, negrita, mas', (tester) async {
+    final controller = NoteEditingController(text: 'T\nalgo')
+      ..selection = const TextSelection.collapsed(offset: 6);
+    void type(String text) {
+      for (final char in text.split('')) {
+        final caret = controller.selection.baseOffset;
+        controller.value = TextEditingValue(
+          text: controller.text.replaceRange(caret, caret, char),
+          selection: TextSelection.collapsed(offset: caret + 1),
+        );
+      }
+    }
+
+    controller.toggleFormat(MarkdownFormat.italic);
+    type('texto');
+    controller.toggleFormat(MarkdownFormat.bold);
+    type('mas');
+    final spans = (await buildSpan(
+      tester,
+      controller,
+    )).children!.cast<TextSpan>();
+    TextStyle? styleOf(String word) =>
+        spans.firstWhere((span) => span.text!.contains(word)).style;
+    expect(
+      styleOf('texto')?.fontStyle,
+      FontStyle.italic,
+      reason: controller.text,
+    );
+    expect(styleOf('texto')?.fontWeight, isNot(FontWeight.bold));
+    expect(
+      styleOf('mas')?.fontStyle,
+      FontStyle.italic,
+      reason: controller.text,
+    );
+    expect(
+      styleOf('mas')?.fontWeight,
+      FontWeight.bold,
+      reason: controller.text,
+    );
+    for (final span in spans) {
+      if (span.text!.contains(RegExp(r'[*_~]'))) {
+        expect(span.style?.color, Colors.transparent, reason: controller.text);
+      }
+    }
   });
 }

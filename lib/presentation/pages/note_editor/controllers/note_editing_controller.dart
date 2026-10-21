@@ -20,24 +20,8 @@ class NoteEditingController extends TextEditingController {
     letterSpacing: 0,
   );
 
-  static final _bold = RegExp.escape(MarkdownConstants.bold);
-  static final _italic = RegExp.escape(MarkdownConstants.italic);
-  static final _strikethrough = RegExp.escape(MarkdownConstants.strikethrough);
-
-  /// Grupo 1: negrita y cursiva, grupo 2: negrita, grupo 3: tachado,
-  /// grupo 4: cursiva, grupo 5: par vacío (recién insertado con la barra).
-  /// El orden importa: ***x*** se prueba antes que **x**
-  static final _inlinePattern = RegExp(
-    '$_bold$_italic(.+?)$_italic$_bold'
-    '|$_bold(.+?)$_bold'
-    '|$_strikethrough(.+?)$_strikethrough'
-    '|$_italic(?!$_italic)(.+?)(?<!$_italic)$_italic'
-    '|($_bold$_bold|$_strikethrough$_strikethrough|$_italic$_italic)',
-  );
-
   /// Pares vacíos, del más largo al más corto
   static const _emptyPairMarkers = [
-    MarkdownConstants.bold + MarkdownConstants.italic,
     MarkdownConstants.bold,
     MarkdownConstants.strikethrough,
     MarkdownConstants.italic,
@@ -72,9 +56,9 @@ class NoteEditingController extends TextEditingController {
     }
 
     for (final format in _parseFormats(text)) {
-      if (format.style != null) {
+      if (format.type != null) {
         ranges.add(
-          _StyledRange(format.innerStart, format.innerEnd, format.style!),
+          _StyledRange(format.innerStart, format.innerEnd, format.type!.style),
         );
       }
       ranges
@@ -350,6 +334,143 @@ class NoteEditingController extends TextEditingController {
       range.start <= index && index < range.end;
   //#endregion Cursor y borrado
 
+  //#region ------------- Formato con la barra -------------------------//
+  /// Pone [type] en la selección o, si ya lo tiene, se lo quita solo a ella
+  /// (en medio de una negrita: **hola |dssd| hosad** → **hola **dssd** hosad**)
+  void toggleFormat(MarkdownFormat type) {
+    final selection = this.selection;
+    if (!selection.isValid) return;
+    final formats = _parseFormats(text);
+    final markers = _markerRanges(text);
+    final enclosing =
+        formats
+            .where(
+              (format) =>
+                  format.type == type &&
+                  format.innerStart <= selection.start &&
+                  selection.end <= format.innerEnd,
+            )
+            .toList()
+          ..sort((a, b) => b.innerStart.compareTo(a.innerStart));
+    super.value = enclosing.isEmpty
+        ? _applyFormat(type, selection.start, selection.end, formats)
+        : _removeFormat(
+            enclosing.first,
+            selection.start,
+            selection.end,
+            markers,
+          );
+  }
+
+  TextEditingValue _applyFormat(
+    MarkdownFormat type,
+    int selectionStart,
+    int selectionEnd,
+    List<_InlineFormat> formats,
+  ) {
+    // Las marcas van pegadas al texto, no a los espacios de los bordes
+    var start = selectionStart;
+    var end = selectionEnd;
+    while (start < end && _isSpace(text[start])) {
+      start++;
+    }
+    while (end > start && _isSpace(text[end - 1])) {
+      end--;
+    }
+    if (start == end) {
+      start = selectionStart;
+      end = selectionEnd;
+    }
+    // Si dentro había pedazos con el mismo formato se unen en uno solo
+    final inner = [
+      for (final format in formats)
+        if (format.type == type &&
+            format.start >= start &&
+            format.end <= end) ...[
+          TextRange(start: format.start, end: format.innerStart),
+          TextRange(start: format.innerEnd, end: format.end),
+        ],
+    ]..sort((a, b) => b.start.compareTo(a.start));
+    var newText = text;
+    var newEnd = end;
+    for (final marker in inner) {
+      newText = newText.replaceRange(marker.start, marker.end, '');
+      newEnd -= marker.end - marker.start;
+    }
+    final marker = type.marker;
+    final selected = newText.substring(start, newEnd);
+    return TextEditingValue(
+      text: newText.replaceRange(start, newEnd, '$marker$selected$marker'),
+      selection: TextSelection(
+        baseOffset: start + marker.length,
+        extentOffset: newEnd + marker.length,
+      ),
+    );
+  }
+
+  TextEditingValue _removeFormat(
+    _InlineFormat format,
+    int start,
+    int end,
+    List<TextRange> markers,
+  ) {
+    final opening = text.substring(format.start, format.innerStart);
+    final closing = text.substring(format.innerEnd, format.end);
+    // Entre el borde y la selección solo hay marcas invisibles: cuenta como
+    // si la selección llegara al borde
+    final atStart = _isHidden(format.innerStart, start, markers);
+    final atEnd = _isHidden(end, format.innerEnd, markers);
+
+    if (start == end) {
+      // Sin selección: lo que se escriba en el cursor sale sin el formato
+      if (atStart) {
+        return value.copyWith(
+          selection: TextSelection.collapsed(offset: format.start),
+        );
+      }
+      if (atEnd) {
+        return value.copyWith(
+          selection: TextSelection.collapsed(offset: format.end),
+        );
+      }
+      return TextEditingValue(
+        text: text.replaceRange(start, start, '$closing$opening'),
+        selection: TextSelection.collapsed(offset: start + closing.length),
+      );
+    }
+
+    // Las marcas nuevas van pegadas a las palabras que siguen con formato:
+    // **hola |dssd| hosad** → **hola** dssd **hosad**
+    var openingAt = end;
+    while (openingAt < format.innerEnd && _isSpace(text[openingAt])) {
+      openingAt++;
+    }
+    var closingAt = start;
+    while (closingAt > format.innerStart && _isSpace(text[closingAt - 1])) {
+      closingAt--;
+    }
+
+    var newText = atEnd
+        ? text.replaceRange(format.innerEnd, format.end, '')
+        : text.replaceRange(openingAt, openingAt, opening);
+    var newStart = start;
+    var newEnd = end;
+    if (atStart) {
+      newText = newText.replaceRange(format.start, format.innerStart, '');
+      newStart -= opening.length;
+      newEnd -= opening.length;
+    } else {
+      newText = newText.replaceRange(closingAt, closingAt, closing);
+      newStart += closing.length;
+      newEnd += closing.length;
+    }
+    return TextEditingValue(
+      text: newText,
+      selection: TextSelection(baseOffset: newStart, extentOffset: newEnd),
+    );
+  }
+  //#endregion Formato con la barra
+
   //#region ------------- Parseo -------------------------//
   List<TextRange> _markerRanges(String text) => [
     for (final format in _parseFormats(text)) ...[
@@ -358,57 +479,99 @@ class NoteEditingController extends TextEditingController {
     ],
   ];
 
-  List<_InlineFormat> _parseFormats(String text, [int offset = 0]) {
+  /// Parser con pila, como los de Markdown: recorre cada renglón y empareja
+  /// cada marca de cierre con la apertura más cercana del mismo tipo, así
+  /// soporta formatos anidados y combinados en cualquier orden.
+  /// Cada formato usa un carácter distinto (** negrita, _ cursiva, ~~ tachado)
+  /// para que sus marcas nunca se confundan aunque queden pegadas
+  List<_InlineFormat> _parseFormats(String text) {
     final formats = <_InlineFormat>[];
-    for (final match in _inlinePattern.allMatches(text)) {
-      final start = offset + match.start;
-      final end = offset + match.end;
-      if (match[5] != null) {
-        final half = match[5]!.length ~/ 2;
-        formats.add(_InlineFormat(start, start + half, end - half, end, null));
-        continue;
-      }
-      final (marker, style, inner) = switch (match) {
-        _ when match[1] != null => (
-          MarkdownConstants.bold + MarkdownConstants.italic,
-          const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontStyle: FontStyle.italic,
-          ),
-          match[1]!,
-        ),
-        _ when match[2] != null => (
-          MarkdownConstants.bold,
-          const TextStyle(fontWeight: FontWeight.bold),
-          match[2]!,
-        ),
-        _ when match[3] != null => (
-          MarkdownConstants.strikethrough,
-          const TextStyle(decoration: TextDecoration.lineThrough),
-          match[3]!,
-        ),
-        _ => (
-          MarkdownConstants.italic,
-          const TextStyle(fontStyle: FontStyle.italic),
-          match[4]!,
-        ),
-      };
-      final innerStart = start + marker.length;
-      formats
-        ..add(
-          _InlineFormat(
-            start,
-            innerStart,
-            innerStart + inner.length,
-            end,
-            style,
-          ),
-        )
-        // Recursivo para combinar formatos, por ejemplo ~~**tachado y negrita**~~
-        ..addAll(_parseFormats(inner, innerStart));
+    var lineStart = 0;
+    for (final line in text.split('\n')) {
+      _parseLine(line, lineStart, formats);
+      lineStart += line.length + 1;
     }
     return formats;
   }
+
+  void _parseLine(String line, int offset, List<_InlineFormat> formats) {
+    final openers = <_Delimiter>[];
+    final unmatched = <_Delimiter>[];
+    for (final run in _delimiterRuns(line)) {
+      final format = _formatsByChar[run.char]!;
+      final used = format.marker.length;
+      var closeStart = run.start;
+      var remaining = run.length;
+      while (remaining >= used) {
+        final index = openers.lastIndexWhere(
+          (opener) => opener.char == run.char && opener.remaining >= used,
+        );
+        if (index == -1) break;
+        final opener = openers[index];
+        final openEnd = opener.start + opener.remaining;
+        formats.add(
+          _InlineFormat(
+            offset + openEnd - used,
+            offset + openEnd,
+            offset + closeStart,
+            offset + closeStart + used,
+            format,
+          ),
+        );
+        opener.remaining -= used;
+        remaining -= used;
+        closeStart += used;
+        // Las aperturas que quedaron dentro sin cerrar ya no se pueden usar
+        unmatched.addAll(openers.sublist(index + 1));
+        openers.removeRange(index + 1, openers.length);
+        if (opener.remaining < used) {
+          unmatched.add(openers.removeAt(index));
+        }
+      }
+      if (remaining > 0) {
+        openers.add(_Delimiter(run.char, closeStart, remaining, run.length));
+      }
+    }
+
+    // Un par sin texto (****, __, ~~~~), recién puesto con la barra, se oculta
+    for (final delimiter in [...unmatched, ...openers]) {
+      final pairLength = _formatsByChar[delimiter.char]!.marker.length * 2;
+      final isWholeRun = delimiter.remaining == delimiter.runLength;
+      if (isWholeRun && delimiter.remaining == pairLength) {
+        final start = offset + delimiter.start;
+        final middle = start + pairLength ~/ 2;
+        formats.add(
+          _InlineFormat(start, middle, middle, start + pairLength, null),
+        );
+      }
+    }
+  }
+
+  static final _formatsByChar = {
+    for (final format in MarkdownFormat.values) format.marker[0]: format,
+  };
+
+  /// Secuencias seguidas del mismo carácter de marca
+  List<({String char, int start, int length})> _delimiterRuns(String line) {
+    final runs = <({String char, int start, int length})>[];
+    var index = 0;
+    while (index < line.length) {
+      final char = line[index];
+      if (!_formatsByChar.containsKey(char)) {
+        index++;
+        continue;
+      }
+      var end = index;
+      while (end < line.length && line[end] == char) {
+        end++;
+      }
+      runs.add((char: char, start: index, length: end - index));
+      index = end;
+    }
+    return runs;
+  }
+
+  bool _isSpace(String char) => char.trim().isEmpty;
 
   //#endregion Parseo
 }
@@ -421,20 +584,44 @@ class _StyledRange {
   const _StyledRange(this.start, this.end, this.style);
 }
 
+enum MarkdownFormat {
+  bold(MarkdownConstants.bold, TextStyle(fontWeight: FontWeight.bold)),
+  italic(MarkdownConstants.italic, TextStyle(fontStyle: FontStyle.italic)),
+  strikethrough(
+    MarkdownConstants.strikethrough,
+    TextStyle(decoration: TextDecoration.lineThrough),
+  );
+
+  final String marker;
+  final TextStyle style;
+
+  const MarkdownFormat(this.marker, this.style);
+}
+
 /// Un formato encontrado en el texto: marcas en [start, innerStart) y
-/// [innerEnd, end), contenido en medio. [style] es null en un par vacío
+/// [innerEnd, end), contenido en medio. [type] es null en un par vacío
 class _InlineFormat {
   final int start;
   final int innerStart;
   final int innerEnd;
   final int end;
-  final TextStyle? style;
+  final MarkdownFormat? type;
 
   const _InlineFormat(
     this.start,
     this.innerStart,
     this.innerEnd,
     this.end,
-    this.style,
+    this.type,
   );
+}
+
+/// Una apertura pendiente: [remaining] marcas sin usar desde [start]
+class _Delimiter {
+  final String char;
+  final int start;
+  final int runLength;
+  int remaining;
+
+  _Delimiter(this.char, this.start, this.remaining, this.runLength);
 }
