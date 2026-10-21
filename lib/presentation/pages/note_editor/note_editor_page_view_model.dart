@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import 'package:gestor_tareas_personales/dependency_injection.dart';
 import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
 import 'package:gestor_tareas_personales/presentation/constants/markdown_constants.dart';
+import 'package:gestor_tareas_personales/presentation/pages/note_editor/controllers/note_editing_controller.dart';
 import 'package:gestor_tareas_personales/presentation/pages/note_editor/note_editor_page.dart';
 import 'package:gestor_tareas_personales/presentation/utils/view_model.dart';
 
@@ -22,11 +23,11 @@ class NoteEditorPageViewModel extends ViewModel<NoteEditorPage> {
   }) {
     _note = widget.note;
     _savedText = _noteToText(_note);
-    controller = TextEditingController(text: _savedText)
+    controller = NoteEditingController(text: _savedText)
       ..addListener(_onTextChanged);
   }
 
-  late final TextEditingController controller;
+  late final NoteEditingController controller;
   NoteEntity? _note;
   String _savedText = '';
   SaveStatus saveStatus = SaveStatus.idle;
@@ -125,7 +126,8 @@ class NoteEditorPageViewModel extends ViewModel<NoteEditorPage> {
         start >= length &&
         end + length <= text.length &&
         text.substring(start - length, start) == marker &&
-        text.substring(end, end + length) == marker;
+        text.substring(end, end + length) == marker &&
+        _hasAsteriskFormat(text, start, marker);
     if (isWrapped) {
       controller.value = TextEditingValue(
         text: text
@@ -147,6 +149,21 @@ class NoteEditorPageViewModel extends ViewModel<NoteEditorPage> {
         extentOffset: end + length,
       ),
     );
+  }
+
+  /// Negrita y cursiva comparten el asterisco: ** es negrita, * cursiva y
+  /// *** ambas. Cuenta los asteriscos antes de la selección para no tomar
+  /// la negrita como cursiva
+  bool _hasAsteriskFormat(String text, int start, String marker) {
+    if (!marker.startsWith(MarkdownConstants.italic)) return true;
+    var asterisks = 0;
+    while (start - asterisks > 0 &&
+        text[start - asterisks - 1] == MarkdownConstants.italic) {
+      asterisks++;
+    }
+    return marker == MarkdownConstants.italic
+        ? asterisks.isOdd
+        : asterisks >= MarkdownConstants.bold.length;
   }
 
   /// Agrega o quita la viñeta del renglón donde está el cursor

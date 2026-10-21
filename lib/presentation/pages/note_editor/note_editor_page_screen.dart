@@ -15,6 +15,12 @@ class NoteEditorPageScreen extends ConsumerWidget {
     final i18n = ref.read(localizationStateProvider.notifier).translate;
     final theme = Theme.of(context);
     final bodyStyle = theme.textTheme.bodyLarge?.copyWith(height: 1.5);
+    final titleStyle = theme.textTheme.headlineSmall?.copyWith(
+      fontWeight: FontWeight.w600,
+    );
+    vm.controller
+      ..titleStyle = titleStyle
+      ..markerStyle = TextStyle(color: theme.colorScheme.outline);
 
     return PopScope(
       canPop: false,
@@ -53,6 +59,9 @@ class NoteEditorPageScreen extends ConsumerWidget {
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       hintText: i18n(TextConstants.noteEditorHint),
+                      hintStyle: titleStyle?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
                     ),
                   ),
                 ),
