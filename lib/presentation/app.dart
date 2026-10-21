@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gestor_tareas_personales/flavors/flavors.dart';
 import 'package:gestor_tareas_personales/presentation/router.dart';
 
 class App extends StatelessWidget {
@@ -6,9 +7,6 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: "Gestor de Tareas Personales",
-      routerConfig: router,
-    );
+    return MaterialApp.router(title: F.title, routerConfig: router);
   }
 }
