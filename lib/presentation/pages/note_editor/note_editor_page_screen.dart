@@ -56,6 +56,7 @@ class NoteEditorPageScreen extends ConsumerWidget {
                     maxLines: null,
                     keyboardType: TextInputType.multiline,
                     textCapitalization: TextCapitalization.sentences,
+                    smartDashesType: SmartDashesType.disabled,
                     textAlignVertical: TextAlignVertical.top,
                     style: bodyStyle,
                     decoration: InputDecoration(
