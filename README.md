@@ -104,7 +104,7 @@ flowchart TB
         direction TB
         UseCase["UseCases<br/>GetNotes, GetPinnedNotes, SaveNote, DeleteNote, PinNote, Load"]
         RepoI["NoteRepository / LocalizationRepository<br/>(interfaces abstractas)"]
-        Entities["Entities<br/>NoteEntity, PetitionStatusEntity&lt;T&gt;, SearchResultEntity&lt;T&gt;"]
+        Entities["Entities<br/>NoteEntity, AsyncState&lt;T&gt;, SearchResult&lt;T&gt;"]
         UseCase --> RepoI
         UseCase -.->|usa| Entities
     end
@@ -126,7 +126,7 @@ flowchart TB
 ```
 lib/
 ├── domain/              # Reglas de negocio puras, sin Flutter ni detalles de almacenamiento
-│   ├── entities/         # NoteEntity, PetitionStatusEntity<T>, SearchResultEntity<T>
+│   ├── entities/         # NoteEntity, AsyncState<T>, SearchResult<T>
 │   ├── repositories/     # Contratos abstractos (NoteRepository, LocalizationRepository)
 │   ├── use_cases/        # Una operación de negocio por clase (note/, load_use_case.dart)
 │   ├── states/           # Contrato de estado global (LocalizationState)
@@ -173,9 +173,9 @@ test/                           # Tests del repositorio, casos de uso y controll
 - **`*_page_view_model.dart`**: extiende `ViewModel<T>` (un `ChangeNotifier` con acceso a `context` y `WidgetRef`), llama a los casos de uso y expone el estado a la UI.
 - **`*_page_screen.dart`**: widget que recibe el `ViewModel` y solo dibuja UI.
 
-### Manejo de resultados asíncronos: `PetitionStatusEntity<T>`
+### Manejo de resultados asíncronos: `AsyncState<T>`
 
-Los repositorios devuelven [PetitionStatusEntity<T>](lib/domain/entities/petition_status_entity.dart): un wrapper con `status` (`notStarted` / `loading` / `complete` / `failed`), `data` y `error`. Los errores se muestran traducidos a partir de las claves de [ErrorsConstants](lib/domain/constants/errors_constants.dart).
+Los repositorios devuelven [AsyncState<T>](lib/domain/entities/petition_status_entity.dart): un wrapper con `status` (`notStarted` / `loading` / `complete` / `failed`), `data` y `error`. Los errores se muestran traducidos a partir de las claves de [ErrorsConstants](lib/domain/constants/errors_constants.dart).
 
 ### Cómo se guardan las notas
 
@@ -201,6 +201,29 @@ Los repositorios devuelven [PetitionStatusEntity<T>](lib/domain/entities/petitio
 > **Hoy la app está solo en español (`es`).**
 
 Los textos visibles usan claves de [TextConstants](lib/presentation/constants/text_constants.dart), y las traducciones viven en `assets/translate_dictionaries/<locale>.json`. Al agregar un texto nuevo, la clave debe ir en `TextConstants` y en **cada** JSON de idioma.
+
+#### Variables dentro de las traducciones
+
+Algunas constantes de `TextConstants` tienen un comentario al final. Ese comentario lista las palabras que se pueden enviar en `values` para que el sistema las inserte como variables en el texto:
+
+```dart
+static const versionAndBuild = "versionAndBuild"; //version,build
+```
+
+En el JSON, cada variable va entre llaves:
+
+```json
+"versionAndBuild": "Versión {version} ({build})"
+```
+
+Y al traducir se envían con esos mismos nombres. `translate` reemplaza cada `{clave}` por su valor:
+
+```dart
+i18n(TextConstants.versionAndBuild, values: {'version': '1.0.0', 'build': '1'});
+// Versión 1.0.0 (1)
+```
+
+Si una constante no tiene comentario, su texto no recibe variables.
 
 ## Paquetes principales
 
