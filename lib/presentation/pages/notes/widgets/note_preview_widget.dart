@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
+import 'package:gestor_tareas_personales/presentation/pages/note_editor/controllers/note_editing_controller.dart';
 
 class NotePreviewWidget extends StatelessWidget {
   final NoteEntity note;
@@ -33,8 +34,8 @@ class NotePreviewWidget extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (note.hasTitle)
-                Text(
-                  note.title!.trim(),
+                Text.rich(
+                  NoteEditingController.formattedSpan(note.title!.trim()),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
@@ -43,8 +44,11 @@ class NotePreviewWidget extends StatelessWidget {
                 ),
               if (note.hasTitle && note.hasContent) const SizedBox(height: 6),
               if (note.hasContent)
-                Text(
-                  note.content!.trim(),
+                Text.rich(
+                  NoteEditingController.formattedSpan(
+                    note.content!.trim(),
+                    listPrefixStyle: TextStyle(color: colorScheme.outline),
+                  ),
                   maxLines: 10,
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.bodyMedium?.copyWith(

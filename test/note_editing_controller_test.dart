@@ -501,4 +501,24 @@ void main() {
       }
     }
   });
+
+  group('preview sin marcas', () {
+    test('quita las marcas y conserva los estilos', () {
+      final span = NoteEditingController.formattedSpan(
+        'hola **negrita _ambas_** y ~~tachado~~',
+      );
+      expect(span.toPlainText(), 'hola negrita ambas y tachado');
+      final children = span.children!.cast<TextSpan>();
+      final ambas = children.firstWhere((child) => child.text == 'ambas');
+      expect(ambas.style?.fontWeight, FontWeight.bold);
+      expect(ambas.style?.fontStyle, FontStyle.italic);
+      final tachado = children.firstWhere((child) => child.text == 'tachado');
+      expect(tachado.style?.decoration, TextDecoration.lineThrough);
+    });
+
+    test('deja visibles las marcas sin pareja y la viñeta de lista', () {
+      final span = NoteEditingController.formattedSpan('- item\n**abierto');
+      expect(span.toPlainText(), '- item\n**abierto');
+    });
+  });
 }

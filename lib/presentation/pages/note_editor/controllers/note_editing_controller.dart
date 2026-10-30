@@ -20,6 +20,42 @@ class NoteEditingController extends TextEditingController {
   ];
 
   //#region ------------- Pintado -------------------------//
+  static TextSpan formattedSpan(
+    String text, {
+    TextStyle? style,
+    TextStyle? listPrefixStyle,
+  }) {
+    final ranges = <_StyledRange>[];
+
+    var lineStart = 0;
+    for (final line in text.split('\n')) {
+      if (listPrefixStyle != null &&
+          line.startsWith(MarkdownConstants.listPrefix)) {
+        ranges.add(
+          _StyledRange(
+            lineStart,
+            lineStart + MarkdownConstants.listPrefix.length,
+            listPrefixStyle,
+          ),
+        );
+      }
+      lineStart += line.length + 1;
+    }
+
+    for (final format in _parseFormats(text)) {
+      if (format.type != null) {
+        ranges.add(
+          _StyledRange(format.innerStart, format.innerEnd, format.type!.style),
+        );
+      }
+    }
+
+    return TextSpan(
+      style: style,
+      children: _buildSegments(text, ranges, removed: _markerRanges(text)),
+    );
+  }
+
   @override
   TextSpan buildTextSpan({
     required BuildContext context,
@@ -67,14 +103,19 @@ class NoteEditingController extends TextEditingController {
       );
     }
 
-    return TextSpan(style: style, children: _buildSegments(ranges));
+    return TextSpan(style: style, children: _buildSegments(text, ranges));
   }
 
-  List<TextSpan> _buildSegments(List<_StyledRange> ranges) {
+  static List<TextSpan> _buildSegments(
+    String text,
+    List<_StyledRange> ranges, {
+    List<TextRange> removed = const [],
+  }) {
     final boundaries = <int>{
       0,
       text.length,
       for (final range in ranges) ...[range.start, range.end],
+      for (final range in removed) ...[range.start, range.end],
     }.toList()..sort();
 
     final segments = <TextSpan>[];
@@ -82,6 +123,9 @@ class NoteEditingController extends TextEditingController {
       final start = boundaries[i];
       final end = boundaries[i + 1];
       if (start == end) continue;
+      if (removed.any((range) => range.start <= start && range.end >= end)) {
+        continue;
+      }
       TextStyle? segmentStyle;
       for (final range in ranges) {
         if (range.start <= start && range.end >= end) {
@@ -95,7 +139,7 @@ class NoteEditingController extends TextEditingController {
     return segments;
   }
 
-  TextStyle _merge(TextStyle? base, TextStyle other) {
+  static TextStyle _merge(TextStyle? base, TextStyle other) {
     if (base == null) return other;
     final decorations = [?base.decoration, ?other.decoration];
     return base
@@ -438,14 +482,14 @@ class NoteEditingController extends TextEditingController {
   //#endregion Formato con la barra
 
   //#region ------------- Parseo -------------------------//
-  List<TextRange> _markerRanges(String text) => [
+  static List<TextRange> _markerRanges(String text) => [
     for (final format in _parseFormats(text)) ...[
       TextRange(start: format.start, end: format.innerStart),
       TextRange(start: format.innerEnd, end: format.end),
     ],
   ];
 
-  List<_InlineFormat> _parseFormats(String text) {
+  static List<_InlineFormat> _parseFormats(String text) {
     final formats = <_InlineFormat>[];
     var lineStart = 0;
     for (final line in text.split('\n')) {
@@ -455,7 +499,7 @@ class NoteEditingController extends TextEditingController {
     return formats;
   }
 
-  void _parseLine(String line, int offset, List<_InlineFormat> formats) {
+  static void _parseLine(String line, int offset, List<_InlineFormat> formats) {
     final openers = <_Delimiter>[];
     final unmatched = <_Delimiter>[];
     for (final run in _delimiterRuns(line)) {
@@ -510,7 +554,9 @@ class NoteEditingController extends TextEditingController {
     for (final format in MarkdownFormat.values) format.marker[0]: format,
   };
 
-  List<({String char, int start, int length})> _delimiterRuns(String line) {
+  static List<({String char, int start, int length})> _delimiterRuns(
+    String line,
+  ) {
     final runs = <({String char, int start, int length})>[];
     var index = 0;
     while (index < line.length) {
