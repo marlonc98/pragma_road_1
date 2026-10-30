@@ -1,11 +1,11 @@
-class SearchResultEntity<T> {
+class SearchResult<T> {
   int currentPage;
   int totalItems;
   List<T> data;
   int itemsPerPage;
   int lastpage;
 
-  SearchResultEntity({
+  SearchResult({
     required this.currentPage,
     required this.totalItems,
     required this.data,
@@ -13,11 +13,11 @@ class SearchResultEntity<T> {
     required this.lastpage,
   });
 
-  factory SearchResultEntity.empty({
+  factory SearchResult.empty({
     int currentPage = 0,
     int itemsPerPage = 0,
   }) {
-    return SearchResultEntity(
+    return SearchResult(
       currentPage: currentPage,
       totalItems: 0,
       data: [],
@@ -30,6 +30,6 @@ class SearchResultEntity<T> {
 
   @override
   String toString() {
-    return 'SearchResultEntity{currentPage: $currentPage, totalItems: $totalItems, data: $data, itemsPerPage: $itemsPerPage, lastpage: $lastpage}';
+    return 'SearchResult{currentPage: $currentPage, totalItems: $totalItems, data: $data, itemsPerPage: $itemsPerPage, lastpage: $lastpage}';
   }
 }

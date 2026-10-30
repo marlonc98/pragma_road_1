@@ -6,6 +6,6 @@ class DeleteNoteUseCase {
 
   DeleteNoteUseCase({required this.noteRepository});
 
-  Future<PetitionStatusEntity<void>> deleteNote(String id) =>
+  Future<AsyncState<void>> deleteNote(String id) =>
       noteRepository.deleteNote(id);
 }

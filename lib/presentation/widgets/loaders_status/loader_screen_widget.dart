@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:gestor_tareas_personales/domain/entities/petition_status_entity.dart';
-import 'package:gestor_tareas_personales/domain/entities/search_result_entity.dart';
+import 'package:gestor_tareas_personales/domain/core/async_state.dart';
+import 'package:gestor_tareas_personales/domain/core/search_result.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gestor_tareas_personales/dependency_injection.dart';
 import 'package:gestor_tareas_personales/presentation/widgets/loaders_status/error_loading_widget.dart';
@@ -23,7 +23,7 @@ Widget? getIconNoResults({
 enum FullSizeOptions { inExpanded, inContainer, notFullSize }
 
 class LoaderScreenWidget<T> extends ConsumerWidget {
-  final PetitionStatusEntity<T> status;
+  final AsyncState<T> status;
   final bool noResultsScreen;
   final bool noResultsSmall;
   final FullSizeOptions fullSize;
@@ -112,7 +112,7 @@ class LoaderScreenWidget<T> extends ConsumerWidget {
     final T? data = status.data;
     final dataIsNull =
         data == null ||
-        (data is SearchResultEntity ? data.isEmpty : false) ||
+        (data is SearchResult ? data.isEmpty : false) ||
         (data is List ? data.isEmpty : false) ||
         (data is Map ? data.isEmpty : false);
 

@@ -8,16 +8,16 @@ class SaveNoteUseCase {
 
   SaveNoteUseCase({required this.noteRepository});
 
-  Future<PetitionStatusEntity<void>> addNote(NoteEntity note) async {
+  Future<AsyncState<void>> addNote(NoteEntity note) async {
     if (note.isEmpty) {
-      return PetitionStatusEntity.fromError(ErrorsConstants.emptyNote);
+      return AsyncState.fromError(ErrorsConstants.emptyNote);
     }
     return noteRepository.addNote(note);
   }
 
-  Future<PetitionStatusEntity<void>> updateNote(NoteEntity note) async {
+  Future<AsyncState<void>> updateNote(NoteEntity note) async {
     if (note.isEmpty) {
-      return PetitionStatusEntity.fromError(ErrorsConstants.emptyNote);
+      return AsyncState.fromError(ErrorsConstants.emptyNote);
     }
     return noteRepository.updateNote(note);
   }

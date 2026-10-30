@@ -10,12 +10,12 @@ class PinNoteUseCase {
 
   PinNoteUseCase({required this.noteRepository});
 
-  Future<PetitionStatusEntity<void>> togglePin(NoteEntity note) async {
+  Future<AsyncState<void>> togglePin(NoteEntity note) async {
     if (!note.pinned) {
       final pinnedCount = await noteRepository.countPinnedNotes();
       if (!pinnedCount.isSuccess) return pinnedCount;
       if ((pinnedCount.data ?? 0) >= maxPinnedNotes) {
-        return PetitionStatusEntity.fromError(ErrorsConstants.maxPinnedNotes);
+        return AsyncState.fromError(ErrorsConstants.maxPinnedNotes);
       }
     }
     return noteRepository.setPinned(note.id, !note.pinned);

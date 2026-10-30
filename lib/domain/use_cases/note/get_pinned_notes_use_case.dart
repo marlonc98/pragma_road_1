@@ -7,7 +7,7 @@ class GetPinnedNotesUseCase {
 
   GetPinnedNotesUseCase({required this.noteRepository});
 
-  Future<PetitionStatusEntity<List<NoteEntity>>> getPinnedNotes({
+  Future<AsyncState<List<NoteEntity>>> getPinnedNotes({
     String? query,
   }) => noteRepository.getPinnedNotes(query: query?.trim());
 }

@@ -7,8 +7,8 @@ import 'package:gestor_tareas_personales/data/repositories/note/api/save_note_ap
 import 'package:gestor_tareas_personales/data/repositories/note/api/set_pinned_api_impl.dart';
 import 'package:gestor_tareas_personales/domain/constants/errors_constants.dart';
 import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
-import 'package:gestor_tareas_personales/domain/entities/petition_status_entity.dart';
-import 'package:gestor_tareas_personales/domain/entities/search_result_entity.dart';
+import 'package:gestor_tareas_personales/domain/core/async_state.dart';
+import 'package:gestor_tareas_personales/domain/core/search_result.dart';
 import 'package:gestor_tareas_personales/domain/repositories/note_repository.dart';
 
 class NoteRepositoryImpl extends NoteRepository {
@@ -19,19 +19,19 @@ class NoteRepositoryImpl extends NoteRepository {
   static const int previewMaxLines = 10;
 
   @override
-  Future<PetitionStatusEntity<void>> addNote(NoteEntity note) =>
+  Future<AsyncState<void>> addNote(NoteEntity note) =>
       _run(() => saveNoteApiImpl(notePrefix, note));
 
   @override
-  Future<PetitionStatusEntity<void>> updateNote(NoteEntity note) =>
+  Future<AsyncState<void>> updateNote(NoteEntity note) =>
       _run(() => saveNoteApiImpl(notePrefix, note));
 
   @override
-  Future<PetitionStatusEntity<void>> deleteNote(String id) =>
+  Future<AsyncState<void>> deleteNote(String id) =>
       _run(() => deleteNoteApiImpl(notePrefix, pinnedNotesKey, id));
 
   @override
-  Future<PetitionStatusEntity<List<NoteEntity>>> getPinnedNotes({
+  Future<AsyncState<List<NoteEntity>>> getPinnedNotes({
     String? query,
   }) => _run(
     () => getPinnedNotesApiImpl(
@@ -43,7 +43,7 @@ class NoteRepositoryImpl extends NoteRepository {
   );
 
   @override
-  Future<PetitionStatusEntity<SearchResultEntity<NoteEntity>>> getNotes({
+  Future<AsyncState<SearchResult<NoteEntity>>> getNotes({
     required int page,
     required int itemsPerPage,
     String? query,
@@ -56,7 +56,7 @@ class NoteRepositoryImpl extends NoteRepository {
       itemsPerPage: itemsPerPage,
       query: query,
     );
-    return SearchResultEntity(
+    return SearchResult(
       currentPage: page,
       totalItems: result.total,
       data: result.notes,
@@ -66,29 +66,29 @@ class NoteRepositoryImpl extends NoteRepository {
   });
 
   @override
-  Future<PetitionStatusEntity<NoteEntity>> getNoteById(String id) async {
+  Future<AsyncState<NoteEntity>> getNoteById(String id) async {
     final response = await _run(
       () => getNoteByIdApiImpl(notePrefix, pinnedNotesKey, id),
     );
     if (response.isSuccess && response.data == null) {
-      return PetitionStatusEntity.fromError(ErrorsConstants.noteNotFound);
+      return AsyncState.fromError(ErrorsConstants.noteNotFound);
     }
     return response.map((note) => note!);
   }
 
   @override
-  Future<PetitionStatusEntity<void>> setPinned(String id, bool pinned) =>
+  Future<AsyncState<void>> setPinned(String id, bool pinned) =>
       _run(() => setPinnedApiImpl(pinnedNotesKey, id, pinned));
 
   @override
-  Future<PetitionStatusEntity<int>> countPinnedNotes() =>
+  Future<AsyncState<int>> countPinnedNotes() =>
       _run(() => countPinnedNotesApiImpl(pinnedNotesKey));
 
-  Future<PetitionStatusEntity<T>> _run<T>(Future<T> Function() call) async {
+  Future<AsyncState<T>> _run<T>(Future<T> Function() call) async {
     try {
-      return PetitionStatusEntity.success(data: await call());
+      return AsyncState.success(data: await call());
     } catch (error) {
-      return PetitionStatusEntity.fromError(error);
+      return AsyncState.fromError(error);
     }
   }
 }

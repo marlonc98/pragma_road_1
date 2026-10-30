@@ -2,28 +2,28 @@ import 'package:gestor_tareas_personales/domain/constants/errors_constants.dart'
 
 enum PetitionStatus { notStarted, loading, complete, failed }
 
-class PetitionStatusEntity<T> {
+class AsyncState<T> {
   PetitionStatus status;
   T? data;
   String? error;
 
-  PetitionStatusEntity({
+  AsyncState({
     this.status = PetitionStatus.loading,
     this.data,
     this.error,
   });
 
-  PetitionStatusEntity.notStarted() : status = PetitionStatus.notStarted;
+  AsyncState.notStarted() : status = PetitionStatus.notStarted;
 
-  factory PetitionStatusEntity.success({T? data}) {
-    return PetitionStatusEntity(status: PetitionStatus.complete, data: data);
+  factory AsyncState.success({T? data}) {
+    return AsyncState(status: PetitionStatus.complete, data: data);
   }
 
-  factory PetitionStatusEntity.loading() {
-    return PetitionStatusEntity(status: PetitionStatus.loading);
+  factory AsyncState.loading() {
+    return AsyncState(status: PetitionStatus.loading);
   }
 
-  factory PetitionStatusEntity.fromError(
+  factory AsyncState.fromError(
     dynamic error, {
     String? defaultError,
   }) {
@@ -46,7 +46,7 @@ class PetitionStatusEntity<T> {
         errorGetted = error.toString();
       }
     }
-    return PetitionStatusEntity(
+    return AsyncState(
       status: PetitionStatus.failed,
       error: errorGetted,
     );
@@ -57,36 +57,36 @@ class PetitionStatusEntity<T> {
   bool get isLoading => status == PetitionStatus.loading;
   bool get isNotStarted => status == PetitionStatus.notStarted;
 
-  PetitionStatusEntity changeStatus(PetitionStatus status) {
-    return PetitionStatusEntity(status: status, data: data, error: error);
+  AsyncState changeStatus(PetitionStatus status) {
+    return AsyncState(status: status, data: data, error: error);
   }
 
-  PetitionStatusEntity setLoading() {
+  AsyncState setLoading() {
     return changeStatus(PetitionStatus.loading);
   }
 
   @override
   String toString() {
-    return 'PetitionStatusEntity{status: $status, data: $data, error: $error}';
+    return 'AsyncState{status: $status, data: $data, error: $error}';
   }
 
-  PetitionStatusEntity<T> copyWith({
+  AsyncState<T> copyWith({
     PetitionStatus? status,
     T? data,
     String? error,
   }) {
-    return PetitionStatusEntity<T>(
+    return AsyncState<T>(
       status: status ?? this.status,
       data: data ?? this.data,
       error: error ?? this.error,
     );
   }
 
-  PetitionStatusEntity<R> map<R>(R Function(T) transform) {
+  AsyncState<R> map<R>(R Function(T) transform) {
     if (isError) {
-      return PetitionStatusEntity<R>(status: status, error: error);
+      return AsyncState<R>(status: status, error: error);
     }
-    return PetitionStatusEntity<R>(
+    return AsyncState<R>(
       status: status,
       data: data != null ? transform(data as T) : null,
       error: error,

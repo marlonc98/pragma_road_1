@@ -11,7 +11,7 @@ import 'package:gestor_tareas_personales/presentation/constants/text_constants.d
 import 'package:gestor_tareas_personales/presentation/pages/note_editor/note_editor_page.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/notes_page.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/widgets/note_options_bottom_sheet.dart';
-import 'package:gestor_tareas_personales/presentation/utils/view_model.dart';
+import 'package:gestor_tareas_personales/presentation/core/view_model.dart';
 
 class NotesPageViewModel extends ViewModel<NotesPage> {
   NotesPageViewModel({
@@ -32,8 +32,8 @@ class NotesPageViewModel extends ViewModel<NotesPage> {
   late final PagingController<int, NoteEntity> pagingController =
       PagingController(getNextPageKey: _getNextPageKey, fetchPage: _fetchPage);
 
-  PetitionStatusEntity<List<NoteEntity>> pinnedNotes =
-      PetitionStatusEntity<List<NoteEntity>>.loading();
+  AsyncState<List<NoteEntity>> pinnedNotes =
+      AsyncState<List<NoteEntity>>.loading();
 
   String get query => searchController.text.trim();
 
@@ -43,7 +43,7 @@ class NotesPageViewModel extends ViewModel<NotesPage> {
   }
 
   void handleRetry() {
-    pinnedNotes = PetitionStatusEntity<List<NoteEntity>>.loading();
+    pinnedNotes = AsyncState<List<NoteEntity>>.loading();
     notifyListeners();
     handleLoadNotes();
   }

@@ -1,7 +1,7 @@
 import 'package:gestor_tareas_personales/domain/constants/errors_constants.dart';
 import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
-import 'package:gestor_tareas_personales/domain/entities/petition_status_entity.dart';
-import 'package:gestor_tareas_personales/domain/entities/search_result_entity.dart';
+import 'package:gestor_tareas_personales/domain/core/async_state.dart';
+import 'package:gestor_tareas_personales/domain/core/search_result.dart';
 import 'package:gestor_tareas_personales/domain/repositories/note_repository.dart';
 
 DateTime _daysAgo(int days) => DateTime.now().subtract(Duration(days: days));
@@ -103,48 +103,48 @@ class NoteRepositoryMock extends NoteRepository {
   final Duration _delay = const Duration(milliseconds: 400);
 
   @override
-  Future<PetitionStatusEntity<void>> addNote(NoteEntity note) async {
+  Future<AsyncState<void>> addNote(NoteEntity note) async {
     await Future.delayed(_delay);
     _fakeNotes.add(note);
-    return PetitionStatusEntity.success();
+    return AsyncState.success();
   }
 
   @override
-  Future<PetitionStatusEntity<void>> updateNote(NoteEntity note) async {
+  Future<AsyncState<void>> updateNote(NoteEntity note) async {
     await Future.delayed(_delay);
     final index = _fakeNotes.indexWhere((element) => element.id == note.id);
-    if (index == -1) return PetitionStatusEntity.fromError(Exception());
+    if (index == -1) return AsyncState.fromError(Exception());
     _fakeNotes[index] = note;
-    return PetitionStatusEntity.success();
+    return AsyncState.success();
   }
 
   @override
-  Future<PetitionStatusEntity<void>> deleteNote(String id) async {
+  Future<AsyncState<void>> deleteNote(String id) async {
     await Future.delayed(_delay);
     _fakeNotes.removeWhere((element) => element.id == id);
-    return PetitionStatusEntity.success();
+    return AsyncState.success();
   }
 
   @override
-  Future<PetitionStatusEntity<List<NoteEntity>>> getPinnedNotes({
+  Future<AsyncState<List<NoteEntity>>> getPinnedNotes({
     String? query,
   }) async {
     await Future.delayed(_delay);
-    return PetitionStatusEntity.success(
+    return AsyncState.success(
       data: _search(query).where((note) => note.pinned).toList(),
     );
   }
 
   @override
-  Future<PetitionStatusEntity<SearchResultEntity<NoteEntity>>> getNotes({
+  Future<AsyncState<SearchResult<NoteEntity>>> getNotes({
     required int page,
     required int itemsPerPage,
     String? query,
   }) async {
     await Future.delayed(_delay);
     final notes = _search(query).where((note) => !note.pinned).toList();
-    return PetitionStatusEntity.success(
-      data: SearchResultEntity(
+    return AsyncState.success(
+      data: SearchResult(
         currentPage: page,
         totalItems: notes.length,
         data: notes.skip((page - 1) * itemsPerPage).take(itemsPerPage).toList(),
@@ -168,29 +168,29 @@ class NoteRepositoryMock extends NoteRepository {
   }
 
   @override
-  Future<PetitionStatusEntity<NoteEntity>> getNoteById(String id) async {
+  Future<AsyncState<NoteEntity>> getNoteById(String id) async {
     await Future.delayed(_delay);
     final index = _fakeNotes.indexWhere((element) => element.id == id);
     if (index == -1) {
-      return PetitionStatusEntity.fromError(ErrorsConstants.noteNotFound);
+      return AsyncState.fromError(ErrorsConstants.noteNotFound);
     }
-    return PetitionStatusEntity.success(data: _fakeNotes[index]);
+    return AsyncState.success(data: _fakeNotes[index]);
   }
 
   @override
-  Future<PetitionStatusEntity<void>> setPinned(String id, bool pinned) async {
+  Future<AsyncState<void>> setPinned(String id, bool pinned) async {
     await Future.delayed(_delay);
     final index = _fakeNotes.indexWhere((element) => element.id == id);
     if (index == -1) {
-      return PetitionStatusEntity.fromError(ErrorsConstants.noteNotFound);
+      return AsyncState.fromError(ErrorsConstants.noteNotFound);
     }
     _fakeNotes[index] = _fakeNotes[index].copyWith(pinned: pinned);
-    return PetitionStatusEntity.success();
+    return AsyncState.success();
   }
 
   @override
-  Future<PetitionStatusEntity<int>> countPinnedNotes() async {
-    return PetitionStatusEntity.success(
+  Future<AsyncState<int>> countPinnedNotes() async {
+    return AsyncState.success(
       data: _fakeNotes.where((note) => note.pinned).length,
     );
   }
