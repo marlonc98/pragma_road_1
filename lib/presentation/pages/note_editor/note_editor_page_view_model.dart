@@ -8,7 +8,7 @@ import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
 import 'package:gestor_tareas_personales/presentation/constants/markdown_constants.dart';
 import 'package:gestor_tareas_personales/presentation/pages/note_editor/controllers/note_editing_controller.dart';
 import 'package:gestor_tareas_personales/presentation/pages/note_editor/note_editor_page.dart';
-import 'package:gestor_tareas_personales/presentation/utils/view_model.dart';
+import 'package:gestor_tareas_personales/presentation/core/view_model.dart';
 
 enum SaveStatus { idle, saving, saved }
 

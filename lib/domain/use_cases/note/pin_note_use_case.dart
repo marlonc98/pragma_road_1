@@ -1,6 +1,6 @@
 import 'package:gestor_tareas_personales/domain/constants/errors_constants.dart';
 import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
-import 'package:gestor_tareas_personales/domain/entities/petition_status_entity.dart';
+import 'package:gestor_tareas_personales/domain/core/async_state.dart';
 import 'package:gestor_tareas_personales/domain/repositories/note_repository.dart';
 
 class PinNoteUseCase {

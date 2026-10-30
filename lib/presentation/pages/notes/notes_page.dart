@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/notes_page_screen.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/notes_page_view_model.dart';
-import 'package:gestor_tareas_personales/presentation/utils/stf_view_model_adapter.dart';
+import 'package:gestor_tareas_personales/presentation/core/stf_view_model_adapter.dart';
 
 class NotesPage extends StatefulWidget {
   static const String route = '/notes';

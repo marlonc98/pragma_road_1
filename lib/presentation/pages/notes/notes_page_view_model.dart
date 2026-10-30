@@ -6,7 +6,7 @@ import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:gestor_tareas_personales/dependency_injection.dart';
 import 'package:gestor_tareas_personales/domain/constants/errors_constants.dart';
 import 'package:gestor_tareas_personales/domain/entities/note_entity.dart';
-import 'package:gestor_tareas_personales/domain/entities/petition_status_entity.dart';
+import 'package:gestor_tareas_personales/domain/core/async_state.dart';
 import 'package:gestor_tareas_personales/presentation/constants/text_constants.dart';
 import 'package:gestor_tareas_personales/presentation/pages/note_editor/note_editor_page.dart';
 import 'package:gestor_tareas_personales/presentation/pages/notes/notes_page.dart';
